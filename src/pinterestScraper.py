@@ -51,9 +51,11 @@ class PinterestScraper:
 
         self.driver.execute_script(f"window.scrollTo(0, {Y});")
         sleep(10)
-        # if False:        
-        #     self.driver.execute_script("document.body.style.zoom='25%'")
+        # # if False:        
+        self.driver.execute_script("document.body.style.zoom='25%'")
         sleep(15)
+        self.driver.refresh()
+        sleep(5)
         category_list = self.driver.find_elements_by_xpath('//div[@data-test-id="grid"]//div[2]/a')
         self.links = []
         for i, item in enumerate(category_list):
@@ -73,7 +75,7 @@ class PinterestScraper:
         self.extract_links()
         for i, link in enumerate(self.links):
             self.get_image_source(link)
-            self.download_images(i + offset, save_path)
+            # self.download_images(i + offset, save_path)
         self.links = []
         self.driver.quit()
 
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     # vehicles/918093243960/
     # animals/925056443165/
     explorePinterest = ['vehicles/918093243960/', 'animals/925056443165/', 'food-and-drink/918530398158/']
-    explorePinterest = ['food-and-drink/918530398158/']
+    # explorePinterest = ['food-and-drink/918530398158/']
     for category in explorePinterest:
         pinterestScrapper = PinterestScraper(category, 'https://www.pinterest.co.uk/ideas/')
         name = category.split('/')[0]
