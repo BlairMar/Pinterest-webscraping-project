@@ -82,66 +82,68 @@ class PinterestScraperExtra(PinterestScraper):
         title_text = title_element.get_attribute('textContent')
         self.current_dict["title"] = title_text
 
-    def grab_poster(self) -> None:
+    def grab_all_users_and_counts(self) -> None:
 
-        ''' Defines a function that grabs the poster name from a Pinterest page
-            and adds it to the key "poster_name" in self.current_dict.
+        ''' Defines a function that checks if a user is officially recognised
+            If official, runs official-user data grab, if not, runs non-official-user
+            data grab .
+        
+            Arguments: None
+            
+            Returns: None '''
+
+        if not (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
+            self.grab_non_official_user_and_count()
+        else:
+            self.grab_official_user_and_count()
+
+    def grab_official_user_and_count(self) -> None:
+
+        ''' Defines a function that grabs the poster name and follower count
+            from a Pinterest page if the user has official recognition
+            and adds them to the keys "poster_name" and "follower_count" in 
+            self.current_dict.
             
             Arguments: None
             
             Returns: None '''
 
-        # There seems to be two different structures to finding the correct element here.
-        # If the poster has a significant following they seem to get 'official-user_attribution".
-        # This changes the structure so we check to see if it's present and grab poster accordingly.
-
-        if not (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
-            poster_container = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupUserRep"]//div[@data-test-id="user-rep"]')
-            poster_element = poster_container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe"]')
-            poster_name = poster_element.get_attribute('textContent')
-            self.current_dict["poster_name"] = poster_name
-
+        container = self.driver.find_element_by_xpath('//div[@data-test-id="official-user-attribution"]')
+        poster_element = container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]')
+        poster_name = poster_element.get_attribute('textContent')
+        self.current_dict["poster_name"] = poster_name
+        follower_element = container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
+        followers = follower_element.get_attribute('textContent')
+        # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
+        # Do not want the text "followers" on the end to clean the data somewhat.
+        if followers == '': # If the element has no associated text, there are no followers. Think this is redunant for official users.
+            self.current_dict["follower_count"] = 0
         else:
-            poster_container = self.driver.find_element_by_xpath('//div[@data-test-id="official-user-attribution"]')
-            poster_element = poster_container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]')
-            poster_name = poster_element.get_attribute('textContent')
-            self.current_dict["poster_name"] = poster_name
+            follower_count = followers.split()[0]
+            self.current_dict["follower_count"] = follower_count
 
-    def grab_follower_count(self) -> None:
+    def grab_non_official_user_and_count(self) -> None:
 
-        ''' Defines a function that grabs the number of followers from 
-            a Pinterest page and adds it to the key "follower_count" in 
-            self.current.dict.
+        ''' Defines a function that grabs the poster name and follower count
+            from a Pinterest page if the user doesnt have official recognition
+            and adds them to the keys "poster_name" and "follower_count" in 
+            self.current_dict.
             
             Arguments: None
             
             Returns: None '''
 
-        # Same thing as the grab_poster function. If the following of a page is significant there is a different page set-up.
-
-        if not (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
-            follower_container = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupUserRep"]//div[@data-test-id="user-rep"]')
-            follower_element = follower_container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
-            followers = follower_element[-1].get_attribute('textContent')
-            
-            # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
-            # Do not want the text "followers" on the end to clean the data somewhat.
-
-            if followers == '': # If the element has no associated text, there are no followers.
-                self.current_dict["follower_count"] = 0
-            else:
-                follower_count = followers.split()[0]
-                self.current_dict["follower_count"] = follower_count
-
+        container = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupUserRep"]//div[@data-test-id="user-rep"]')
+        poster_element = container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe"]')
+        poster_name = poster_element.get_attribute('textContent')
+        self.current_dict["poster_name"] = poster_name
+        follower_element = container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
+        followers = follower_element[-1].get_attribute('textContent')
+        if followers == '': # If the element has no associated text, there are no followers.
+            self.current_dict["follower_count"] = 0
         else:
-            follower_container = self.driver.find_element_by_xpath('//div[@data-test-id="official-user-attribution"]')
-            follower_element = follower_container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
-            followers = follower_element.get_attribute('textContent')
-            if followers == '': # Pretty useless given how this case is structured in html, but same as above, just in case.
-                self.current_dict["follower_count"] = 0
-            else:
-                follower_count = followers.split()[0]
-                self.current_dict["follower_count"] = follower_count
+            follower_count = followers.split()[0]
+            self.current_dict["follower_count"] = follower_count
 
     def grab_description(self) -> None:
 
@@ -203,8 +205,7 @@ class PinterestScraperExtra(PinterestScraper):
             self.driver.get(self.current_link)
             self.grab_title()
             self.grab_description()
-            self.grab_poster()
-            self.grab_follower_count()
+            self.grab_all_users_and_counts()
             self.grab_tags()
             self.grab_image_src()
             self.main_dict[f"animal_pic_{i+1}"] = self.current_dict
@@ -227,7 +228,6 @@ class PinterestScraperExtra(PinterestScraper):
 
     # TO DO
     # See how to grab the wanted image from each page.
-    # Official user vs non official user to grab what I need.
     # Link to external source is a button, cannot grab href unless I visit each page. Sort out later if needed.
 
 if __name__ == "__main__":
@@ -237,4 +237,3 @@ if __name__ == "__main__":
     test.extract_links()
     test.grab_page_data()
     test.data_dump()
-    print(test.main_dict)
