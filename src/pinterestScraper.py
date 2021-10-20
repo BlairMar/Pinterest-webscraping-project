@@ -55,7 +55,7 @@ class PinterestScraper:
         """Print all categories available on the homepage
         """
         print(f"\n The options (Total {len(self.category_link_dict)})  are:")
-        for idx, category in self.category_link_dict.items(): #prints all the categories available on the root page
+        for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
             print(f"\t {idx}: {category.replace('https://www.pinterest.co.uk/ideas/', '').split('/')[0]}")
 
     def _get_user_input(self):  
@@ -64,7 +64,7 @@ class PinterestScraper:
         try:    
             categories_num = int(input(f"\nFrom how many categories do you want to download images?: \n"))
             assert categories_num <= len(self.category_link_dict)
-        except: #throws error if user puts in too high number of category 
+        except:  
             raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.") 
         pass
 
