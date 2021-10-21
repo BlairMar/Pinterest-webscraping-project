@@ -28,6 +28,7 @@ class PinterestScraper:
             print(name)
             if not os.path.exists(f'../{name}'):
                 os.makedirs(f'../{name}')
+            
 
 
 #     def extract_links(self) -> None:
@@ -80,6 +81,8 @@ class PinterestScraper:
                 print(len(self.image_set), 'image set')
             except: 
                 print('Some error, likely no pics')
+
+
         # sleep(5)
         # self.driver.refresh()
         # sleep(5)ß
@@ -131,3 +134,6 @@ if __name__ == "__main__":
     #     os.makedirs(f'../{name}')
     # print(pinterest_scraper.src)
     pinterest_scraper.get_category_images()
+
+
+print(PinterestScraper.extract_links)
