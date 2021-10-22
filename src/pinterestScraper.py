@@ -1,30 +1,103 @@
+from typing import DefaultDict
 from selenium import webdriver
 import time
 from time import sleep
 import urllib.request
 import os
+from collections import defaultdict
 
-# Let's define our class
+
+
+"""
+Class to perform webscraping on the Pinterest website.
+"""
 class PinterestScraper:
     def __init__(self, root):
-        self.category = None # Animals- animals/925056443165/
-        self.root = root #pinterest.co.uk/
+        """
+        Initialise the attributes of the class
+
+        Args
+        ----------------------------------------------------------------
+        root: str \n
+                The main page which contains a list of all the
+             available categories
+
+        Attributes
+        ---------------------------
+        category: str \n
+        root: str \n
+        driver: webdriver object \n
+        image_set: list \n
+        category_link_list: list \n
+        save_path: str \n
+        """
+
+        self.category = None
+        self.category_image_count = defaultdict(int)
+        self.root = root
         self.driver = webdriver.Chrome()
         self.image_set = set()
-        self.category_link_list = []
+        self.category_link_dict = []
         self.save_path = None
-        # self.image_links = [] Initialize links, so if the user calls for get_image_source, it doesn't throw an error
         
-    def get_category_links(self):
+        
+    def _get_category_links(self) -> None:
+        """Extract the href attribute of each of the categories
+        """
         self.driver.get(self.root)
         sleep(2)
+        # Get the a list of all the categories
         categories = self.driver.find_elements_by_xpath('//div[@data-test-id="interestRepContainer"]//a')
-        self.category_link_list = [link.get_attribute('href') for link in categories]
+        # Extract the href
+        self.category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
 
-    def create_folders(self):
-        path = '..'
-        for category in self.category_link_list:
+    def _print_options(self):
+        """Print all categories available on the homepage
+        """
+        print(f"\n The options (Total {len(self.category_link_dict)})  are:")
+        for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
+            print(f"\t {idx}: {category.replace('https://www.pinterest.co.uk/ideas/', '').split('/')[0]}")
+
+    def _get_user_input(self):  
+        """Let user decide how many and which categories to download
+        """
+        try:    
+            categories_num = int(input(f"\nFrom how many categories do you want to download images?: \n"))
+            assert categories_num <= len(self.category_link_dict)
+        except:  
+            raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.") 
+        pass
+
+        print(categories_num)
+        self.selected_category = {}
+        if categories_num == len(self.category_link_dict):
+            self.selected_category = self.category_link_dict
+        else:
+            print("Which one(s) [Pick number(s)]?: ")
+            selected_category = []
+            try:
+                for i in range(categories_num):
+                    choice = int(input(f"{categories_num - i} choices left: "))
+                    assert choice < len(self.category_link_dict)
+                    self.selected_category[i+1] = self.category_link_dict[choice]
+            except:
+                raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.")
+            
+        print(f"Categories selected: {self.selected_category.values()}")
+
+    def _create_folders(self) -> None:
+        """Create corresponding folders to store images of each category
+        """
+        self.root_save_path = '../data'
+
+        # Create a folder named data to store a folder for each category
+        if not os.path.exists(f'{self.root_save_path}'):
+                os.makedirs(f'{self.root_save_path}')
+
+        # Create the category folders if they do not already exist
+        for category in self.selected_category.values():
             name = category.split('/')[4]
+<<<<<<< HEAD
             print(name)
             if not os.path.exists(f'../{name}'):
                 os.makedirs(f'../{name}')
@@ -63,23 +136,33 @@ class PinterestScraper:
 #         self.links = []
 
     def extract_links(self) -> None:
+=======
+            print(f"Category folder: {name}")
+            if not os.path.exists(f'{self.root_save_path}/{name}'):
+                os.makedirs(f'{self.root_save_path}/{name}')
+
+    def _extract_links(self) -> None:
+        """Move to the page of a category and extract src attribute for the images 
+            at the bottom of the page
+        """
+>>>>>>> main
         self.driver.get(self.root + self.category)
-        Y = 10**6
-        # # if False:        
+        Y = 10**6   # Amount to scroll down the page   
         sleep(2)
-        # self.driver.execute_script("document.body.style.zoom='25%'")
-        # sleep(2)
-        for _ in range(3):
-            self.driver.execute_script(f"window.scrollTo(0, {Y})")
+
+        # Keep scrolling down for a number of times
+        for _ in range(2):
+            self.driver.execute_script(f"window.scrollTo(0, {Y})")  # Scroll down the page
             sleep(1)
+            # Store the link of each image if the page contains the targeted images
             try:
                 container = self.driver.find_element_by_xpath('//div[@data-test-id="grid"]//div[@class="vbI XiG"]')
                 image_list = container.find_elements_by_xpath('//div[@class="Yl- MIw Hb7"]//img')
-                # ('//div[@data-test-id="grid"]//div[2]//img')
-                print(len(image_list))
-                self.image_set.update([link.get_attribute('src') for link in image_list])
-                print(len(self.image_set), 'image set')
+                print(f"Number of images successfully extracted: {len(image_list)}")
+                self.image_set.update([(self.category, link.get_attribute('src')) for link in image_list])
+                print(f"Number of uniques images: {len(self.image_set)}")
             except: 
+<<<<<<< HEAD
                 print('Some error, likely no pics')
 
 
@@ -93,42 +176,64 @@ class PinterestScraper:
         # print(self.links)
 
     def get_image_source(self, link: str) -> None:
+=======
+                print('Some errors occurred, most likely due to no images present')
+
+    def _get_image_source(self, link: str) -> None:
+        """Move to the image source page
+
+        Args
+        ---------------------
+        link: str
+        """
+>>>>>>> main
         self.driver.get(link)
         sleep(0.5)
-        # self.src = link.get_attribute('src')
         self.src = link
 
-    def download_images(self, i) -> None:
-        # filename = self.category.split('/')[0]
-        urllib.request.urlretrieve(self.src, f"../{self.save_path}/{self.save_path}_{i}.jpg")
+    def _download_image(self, i: int) -> None:
+        """Download the image
+        Args
+        ---------------------
+        i: int
+        """
+        urllib.request.urlretrieve(self.src, 
+                                f"{self.root_save_path}/{self.save_path}/{self.save_path}_{i}.jpg")
+
+    def _grab_image_srcs(self) -> None:
+        """Get src links for all images
+        """
+        self._get_category_links()
+        self._print_options()
+        self._get_user_input()
+        self._create_folders()
+        
+        # Loop through each category
+        for category in self.selected_category.values():
+            self.category = category.replace('https://www.pinterest.co.uk/ideas/', "")
+            self.category_image_count[self.category] = 0
+            self._extract_links()
+
+    def _save_all_images(self) -> None: 
+        """Download images that are not a profile picture
+        """
+        for category,link in self.image_set:
+            if '75x75' not in link: # Download image if it is not a profile picture
+                self.save_path = f'{category.split("/")[0]}'
+                self._get_image_source(link)
+                self.category_image_count[category] += 1
+                self._download_image(self.category_image_count[category])
+        self.driver.quit()  # Terminate the webdriver and close all windows
 
     def get_category_images(self) -> None:
-        self.get_category_links()
-        self.create_folders()
-        for category in self.category_link_list:
-            self.category = category.replace('https://www.pinterest.co.uk/ideas/', "")
-            self.extract_links()
-            self.save_path = f'{self.category.split("/")[0]}'
-            for i, link in enumerate(self.image_set):
-                if '75x75' not in link:
-                    self.get_image_source(link)
-                    self.download_images(i)
-            self.image_set = set()
-        self.driver.quit()
+        """Grab all image links, then download all images
+        """
+        self._grab_image_srcs()
+        self._save_all_images()
 
 if __name__ == "__main__":
-    # # vehicles/918093243960/
-    # # animals/925056443165/
-    # explorePinterest = ['vehicles/918093243960/', 'animals/925056443165/', 'food-and-drink/918530398158/']
-    # explorePinterest = ['animals/925056443165/']
-    # for category in explorePinterest:
-    #     pinterestScrapper = PinterestScraper(category, 'https://www.pinterest.co.uk/ideas/')
-    #     name = category.split('/')[0]
-    #     # init_idx = len(os.listdir(r'D:/AiCore-perso/Projects/Pintrest-webscraping-project/data/{}'.format(name)))
-    #     # print(init_idx)
-    #     # pinterestScrapper.get_category_images(f'D:\AiCore-perso\Projects\Pintrest-webscraping-project\data\{name}', init_idx)
-    
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
+<<<<<<< HEAD
     # name = 'animals'
     # if not os.path.exists(f'../{name}'):
     #     os.makedirs(f'../{name}')
@@ -137,3 +242,6 @@ if __name__ == "__main__":
 
 
 print(PinterestScraper.extract_links)
+=======
+    pinterest_scraper.get_category_images()
+>>>>>>> main
