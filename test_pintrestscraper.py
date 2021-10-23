@@ -4,6 +4,7 @@ from src import pinterestScraper
 from hypothesis import given
 import hypothesis.strategies as st
 import random
+import requests
 
 class PinterestScraperTestCase(unittest.TestCase):
     '''
@@ -50,7 +51,24 @@ class PinterestScraperTestCase(unittest.TestCase):
         self.assertEqual(x, y)
         #self.assertEqual(self.category_link_list, )   # do i ultimately haveto make ANY test, as long as it shows that the definite output is the same as out output from the function?- YES
     
-    @given(st.text()) 
+     
+    @given
+    def test_print_options():
+        '''
+        This function tests if the available categories are printed out
+        '''
+        available_categories = pinterestScraper.PinterestScraper._print_options
+        pass
+
+    @given
+    def test_get_user_inputs():
+        '''
+        This function tests if the user's inputs are inputted successfully
+        '''
+        pass
+
+
+     @given(st.text()) 
     def test_create_folders(self): # how would we test to see if it creates folders properly?
         '''
         This function is used to test if folders are created properly
@@ -71,27 +89,38 @@ class PinterestScraperTestCase(unittest.TestCase):
     @given(st.text())
     def test_extract_links():
         '''
-        This function is used to test if correct links are extracted
+        This function is used to test if correct src links are extracted
         '''
-        actual_links = pinterestScraper.PinterestScraper.extract_links
-        
+        actual_links = pinterestScraper.PinterestScraper._extract_links
+        test_link = [#grab 3 diffferent ones from the acc page]
         pass
     
     @given(st.text())
-    def test_get_image_source():
+    def test_get_image_source(link:str):
         '''
         This function is used to test if the correct image source is retreived
         '''
-        actual_image_source = pinterestScraper.PinterestScraper.get_image_source
+        actual_image_source = pinterestScraper.PinterestScraper._get_image_source # need to see wether 'pressing on the src link actually brings us to the root image"
+        response = requests.head(random.choice(actual_image_source))
+        print response.headers.get('content-type')
         pass
     
     @given(st.text())
-    def test_download_images():
+    def test_download_image():
         '''
         This funciton is used to test if the images are downloaded properly
         '''    
         pass
     
+    @given
+    def test_grab_image_srcs():
+        pass
+
+    @given
+    def test_save_all_images():
+        pass
+
+
     @given(st.text())
     def test_get_category_images():
         ''''
