@@ -22,6 +22,12 @@ class PinterestScraperExtra(PinterestScraper):
         self.current_dict = {}
         self.main_dict = {}
         self.current_link = ''
+        self.xpath_dict = {
+            'official_user_container': '//div[@data-test-id="official-user-attribution"]',
+            'official_user_element': './/div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]',
+            'non_off_user_container': '//div[@data-test-id="CloseupUserRep"]//div[@data-test-id="user-rep"]',
+            'non_off_user_element': './/div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe"]'
+        }
         # self.image_links = [] Initialize links, so if the user calls for get_image_source, it doesn't throw an error
         
 
@@ -93,34 +99,32 @@ class PinterestScraperExtra(PinterestScraper):
             Returns: None '''
 
         if not (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
-            self._grab_non_official_user_and_count()
+            self._grab_user_and_count(
+                self.xpath_dict['non_off_user_container'],
+                self.xpath_dict['non_off_user_element']
+            )
         else:
-            self._grab_official_user_and_count()
+            self._grab_user_and_count(
+                self.xpath_dict['official_user_container'],
+                self.xpath_dict['official_user_element']
+            )
 
-    def _assign_poster_name(self, container, poster_element) -> str:
+    def _grab_user_and_count(self, dict_container, dict_element) -> None:
 
-        ''' Defines a function that grabs the poster name and assigns it to the
-            "poster_name" key in self.current_dict. Also return follower count
-            web element.
+        ''' Defines a function that grabs the poster name and follower count
+            and appends adds them to the keys "poster_name" and "follower_count"
+            respectively in self.current_dict.
             
-            Arguments: container: web element, poster_element: web element
-            
-            Returns: followers: str '''
-
-        poster_name = poster_element.get_attribute('textContent')
-        self.current_dict["poster_name"] = poster_name
-        follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
-        return follower_element[-1].get_attribute('textContent')
-
-    def _find_follower_count(self, followers: str) -> None:
-
-        ''' Defines a function that grabs the follwoer count and assigns it to the
-            "follower_count" key in self.current_dict.
-            
-            Arguments: followers: str
+            Arguments: dict_container, dict_element
             
             Returns: None '''
 
+        container = self.driver.find_element_by_xpath(dict_container)
+        poster_element = container.find_element_by_xpath(dict_element)          
+        poster_name = poster_element.get_attribute('textContent')
+        self.current_dict["poster_name"] = poster_name
+        follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
+        followers = follower_element[-1].get_attribute('textContent')
         # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
         # Do not want the text "followers" on the end to clean the data somewhat.
         if followers == '': # If the element has no associated text, there are no followers. Think this is redunant for official users.
@@ -128,37 +132,7 @@ class PinterestScraperExtra(PinterestScraper):
         else:
             follower_count = followers.split()[0]
             self.current_dict["follower_count"] = follower_count
-        
-    def _grab_official_user_and_count(self) -> None:
-
-        ''' Defines a function that grabs the appropriate web element for official users,
-            then runs two functions to grab poster_name and follower_count
-            based on appropriate aforementioned web element.
-            
-            Arguments: None
-            
-            Returns: None '''
-
-        container = self.driver.find_element_by_xpath('//div[@data-test-id="official-user-attribution"]')
-        poster_element = container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]')
-        followers = self._assign_poster_name(container, poster_element)
-        self._find_follower_count(followers)
-        
-    def _grab_non_official_user_and_count(self) -> None:
-
-        ''' Defines a function that grabs the appropriate web element for non-official users,
-            then runs two functions to grab poster_name and follower_count
-            based on appropriate aforementioned web element.
-            
-            Arguments: None
-            
-            Returns: None '''
-
-        container = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupUserRep"]//div[@data-test-id="user-rep"]')
-        poster_element = container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe"]')
-        followers = self._assign_poster_name(container, poster_element)
-        self._find_follower_count(followers)
-
+    
     def _grab_description(self) -> None:
 
         ''' Defines a function that grabs the description from a Pinterest page
