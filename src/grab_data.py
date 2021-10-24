@@ -54,7 +54,7 @@ class PinterestScraperExtra(PinterestScraper):
             except: 
                 print('Some error, likely no <a> tag')
 
-    def grab_tags(self) -> None:
+    def _grab_tags(self) -> None:
 
         ''' Defines a function that grabs the tags from a Pinterest page
             and adds them to the key "tag_list" in self.current_dict.
@@ -68,7 +68,7 @@ class PinterestScraperExtra(PinterestScraper):
         tag_text_list = [tag.get_attribute('textContent') for tag in tag_elements]
         self.current_dict["tag_list"] = tag_text_list
 
-    def grab_title(self) -> None:
+    def _grab_title(self) -> None:
 
         ''' Defines a function that grabs the title from a Pinterest page
             and adds it to the key "title" in self.current_dict.
@@ -82,7 +82,7 @@ class PinterestScraperExtra(PinterestScraper):
         title_text = title_element.get_attribute('textContent')
         self.current_dict["title"] = title_text
 
-    def grab_all_users_and_counts(self) -> None:
+    def _grab_all_users_and_counts(self) -> None:
 
         ''' Defines a function that checks if a user is officially recognised
             If official, runs official-user data grab, if not, runs non-official-user
@@ -93,11 +93,11 @@ class PinterestScraperExtra(PinterestScraper):
             Returns: None '''
 
         if not (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
-            self.grab_non_official_user_and_count()
+            self._grab_non_official_user_and_count()
         else:
-            self.grab_official_user_and_count()
+            self._grab_official_user_and_count()
 
-    def assign_poster_name(self, container, poster_element) -> str:
+    def _assign_poster_name(self, container, poster_element) -> str:
 
         ''' Defines a function that grabs the poster name and assigns it to the
             "poster_name" key in self.current_dict. Also return follower count
@@ -112,7 +112,7 @@ class PinterestScraperExtra(PinterestScraper):
         follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
         return follower_element[-1].get_attribute('textContent')
 
-    def find_follower_count(self, followers: str) -> None:
+    def _find_follower_count(self, followers: str) -> None:
 
         ''' Defines a function that grabs the follwoer count and assigns it to the
             "follower_count" key in self.current_dict.
@@ -129,7 +129,7 @@ class PinterestScraperExtra(PinterestScraper):
             follower_count = followers.split()[0]
             self.current_dict["follower_count"] = follower_count
         
-    def grab_official_user_and_count(self) -> None:
+    def _grab_official_user_and_count(self) -> None:
 
         ''' Defines a function that grabs the appropriate web element for official users,
             then runs two functions to grab poster_name and follower_count
@@ -141,10 +141,10 @@ class PinterestScraperExtra(PinterestScraper):
 
         container = self.driver.find_element_by_xpath('//div[@data-test-id="official-user-attribution"]')
         poster_element = container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]')
-        followers = self.assign_poster_name(container, poster_element)
-        self.find_follower_count(followers)
+        followers = self._assign_poster_name(container, poster_element)
+        self._find_follower_count(followers)
         
-    def grab_non_official_user_and_count(self) -> None:
+    def _grab_non_official_user_and_count(self) -> None:
 
         ''' Defines a function that grabs the appropriate web element for non-official users,
             then runs two functions to grab poster_name and follower_count
@@ -156,10 +156,10 @@ class PinterestScraperExtra(PinterestScraper):
 
         container = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupUserRep"]//div[@data-test-id="user-rep"]')
         poster_element = container.find_element_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe"]')
-        followers = self.assign_poster_name(container, poster_element)
-        self.find_follower_count(followers)
+        followers = self._assign_poster_name(container, poster_element)
+        self._find_follower_count(followers)
 
-    def grab_description(self) -> None:
+    def _grab_description(self) -> None:
 
         ''' Defines a function that grabs the description from a Pinterest page
             and adds it to the key "description" in self.current_dict.
@@ -178,7 +178,7 @@ class PinterestScraperExtra(PinterestScraper):
         except:
             self.current_dict["description"] = 'No description available'
 
-    def grab_image_src(self) -> None:
+    def _grab_image_src(self) -> None:
 
         ''' Defines a function that grabs the image src from a Pinterest page
             and adds it to the key "image_src" in self.current_dict.
@@ -217,11 +217,11 @@ class PinterestScraperExtra(PinterestScraper):
             self.current_dict = {}
             self.current_link = link
             self.driver.get(self.current_link)
-            self.grab_title()
-            self.grab_description()
-            self.grab_all_users_and_counts()
-            self.grab_tags()
-            self.grab_image_src()
+            self._grab_title()
+            self._grab_description()
+            self._grab_all_users_and_counts()
+            self._grab_tags()
+            self._grab_image_src()
             self.main_dict[f"animal_pic_{i+1}"] = self.current_dict
         
     def data_dump(self) -> None:
