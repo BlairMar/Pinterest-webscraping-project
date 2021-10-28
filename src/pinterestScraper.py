@@ -1,6 +1,4 @@
-from typing import DefaultDict
 from selenium import webdriver
-import time
 from time import sleep
 import urllib.request
 import os
@@ -11,11 +9,11 @@ from selenium.webdriver.support import expected_conditions as EC
 import json
 # from webdriver_manager.chrome import ChromeDriverManager
 
-
 """
 Class to perform webscraping on the Pinterest website.
 """
 class PinterestScraper:
+
     def __init__(self, root):
         """
         Initialise the attributes of the class
@@ -45,7 +43,7 @@ class PinterestScraper:
         self.category_image_count = defaultdict(int)
         self.root = root
         self.driver = webdriver.Chrome()
-#        self.driver = webdriver.Chrome(ChromeDriverManager().install())
+        # self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.image_set = set()
         self.category_link_dict = []
         self.save_path = None
@@ -60,10 +58,16 @@ class PinterestScraper:
             'non_off_user_container': '//div[@data-test-id="user-rep"]',
             'non_off_user_element': './/div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe"]',
             'tag_container': '//div[@data-test-id="CloseupDetails"]',
-            'story_tag_container': '//div[@data-test-id="CloseupMainPin"]'
+            'story_tag_container': '//div[@data-test-id="CloseupMainPin"]',
+            'reg_title_element': '//div[@data-test-id="CloseupDetails"]//div[@data-test-id="pinTitle"]/h1/div',
+            'h1_title_element': '//div[@data-test-id="CloseupMainPin"]//h1',
+            'desc_container': '//div[@data-test-id="CloseupDetails"]//div[@data-test-id="CloseupDescriptionContainer"]',
+            'desc_element': './/span[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]',
+            'links_container': '//div[@data-test-id="grid"]//div[@class="vbI XiG"]',
+            'links_element': './/div[@class="Yl- MIw Hb7"]/div/div/div/div[1]/a',
+            'categories_container': '//div[@data-test-id="interestRepContainer"]//a'
         }
-        
-        
+
     def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories
         
@@ -161,88 +165,60 @@ class PinterestScraper:
         sleep(2)
 
         # Keep scrolling down for a number of times
-        for _ in range(3):
+        for _ in range(2):
             self.driver.execute_script(f"window.scrollTo(0, {Y})")  # Scroll down the page
             sleep(1)
             # Store the link of each image if the page contains the targeted images
             try:
-                container = self.driver.find_element_by_xpath('//div[@data-test-id="grid"]//div[@class="vbI XiG"]')
-                link_list = container.find_elements_by_xpath('//div[@class="Yl- MIw Hb7"]/div/div/div/div[1]/a')
-                print(f"Number of hrefs successfully extracted: {len(link_list)}")
+                container = self.driver.find_element_by_xpath(container_xpath)
+                link_list = container.find_elements_by_xpath(elements_xpath)
+                print(f"Number of images successfully extracted: {len(link_list)}")
                 self.link_set.update([(self.category, link.get_attribute('href')) for link in link_list])
-                # Need to ensure that later on I call on the self.category for saving the json.
-                print(f"Number of uniques hrefs: {len(self.link_set)}")
+                print(f"Number of uniques images: {len(self.link_set)}")
             except: 
                 print('Some errors occurred, most likely due to no images present')
 
-    def _get_image_source(self, link: str) -> None:
-        """Move to the image source page
-
-        Args
-        ---------------------
-        link: str
-        """
-        self.driver.get(link)
-        sleep(0.5)
-        self.src = link
-
-    def _download_image(self, i: int) -> None:
-        """Download the image
-        Args
-        ---------------------
-        i: int
-        """
-        urllib.request.urlretrieve(self.src, 
-                                f"{self.root_save_path}/{self.save_path}/{self.save_path}_{i}.jpg")
-
-    def _grab_images_src(self, container_xpath: str, elements_xpath: str) -> None:
+    def _grab_images_src(self) -> None:
         """Get src links for all images
         
         Args
         ---------------------
-        container_xpath: str 
-        elements_xpath: str
+        None
         """
         
         # Loop through each category
         for category in self.selected_category.values():
             self.category = category.replace(self.root, "")
             self.category_image_count[self.category] = 0
-            self._extract_links(container_xpath, elements_xpath)
+            self._extract_links(self.xpath_dict['links_container'], self.xpath_dict['links_element'])
 
-    def _grab_title(self) -> None:
+    def _grab_title(self, title_element) -> None:
 
         ''' Defines a function that grabs the title from a Pinterest page
             and adds it to the key "title" in self.current_dict.
             
-            Arguments: None
+            Arguments: title_element
             
             Returns: None '''
         try:
-            title_container = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupDetails"]//div[@data-test-id="pinTitle"]')
-            title_element = title_container.find_element_by_xpath('./h1/div')
+            title_element = self.driver.find_element_by_xpath(title_element)
             self.current_dict["title"] = title_element.get_attribute('textContent')
         except:
             self.current_dict["title"] = 'No Title Data Available'
-
-    def _grab_h1_title(self) -> None:
-
-        title_element = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupMainPin"]//h1')
-        self.current_dict["title"] = title_element.get_attribute('textContent')
-
-    def _grab_description(self) -> None:
+        
+    def _grab_description(self, desc_container, desc_element) -> None:
 
         ''' Defines a function that grabs the description from a Pinterest page
             and adds it to the key "description" in self.current_dict.
             
-            Arguments: None
+            Arguments: desc_container, desc_element
             
             Returns: None '''
 
-        description_container = self.driver.find_element_by_xpath('//div[@data-test-id="CloseupDetails"]//div[@data-test-id="CloseupDescriptionContainer"]')
+        description_container = self.driver.find_element_by_xpath(desc_container)
         try: # Need this try statement to see if the description is present. Other wise it faults if there is no description.
             description_element = WebDriverWait(description_container, 0.5).until(
-                EC.presence_of_element_located((By.XPATH, './/span[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]'))
+                EC.presence_of_element_located((By.XPATH, desc_element))
             )
             self.current_dict["description"] = description_element.get_attribute('textContent')
         except:
@@ -270,44 +246,6 @@ class PinterestScraper:
         else:
             self.current_dict["follower_count"] = followers.split()[0]
 
-    def _grab_all_users_and_counts(self) -> None:
-
-        ''' Defines a function that checks if a user is officially recognised or
-            a story. If official, runs official-user data grab, if not, runs non-official-user
-            data grab or story_grab if a story.
-        
-            Arguments: None
-            
-            Returns: None '''
-
-        if (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
-            self._grab_title()
-            self._grab_description()
-            self._grab_user_and_count(
-                self.xpath_dict['official_user_container'],
-                self.xpath_dict['official_user_element']
-            )
-            self._grab_tags(self.xpath_dict['tag_container'])
-            self._grab_image_src()
-        elif (self.driver.find_elements_by_xpath('//div[@data-test-id="CloseupDetails"]')):
-            self._grab_title()
-            self._grab_description()
-            self._grab_user_and_count(
-                self.xpath_dict['non_off_user_container'],
-                self.xpath_dict['non_off_user_element']
-            )
-            self._grab_tags(self.xpath_dict['tag_container'])
-            self._grab_image_src()
-        else:
-            self._grab_h1_title()
-            self.current_dict["description"] = 'No description available in this page format'
-            self._grab_user_and_count(
-                self.xpath_dict['non_off_user_container'],
-                self.xpath_dict['non_off_user_element']
-            )
-            self._grab_tags(self.xpath_dict['story_tag_container'])
-            self._grab_story_image_srcs()
-
     def _grab_tags(self, tag_container) -> None:
 
         ''' Defines a function that grabs the tags from a Pinterest page
@@ -317,35 +255,14 @@ class PinterestScraper:
             
             Returns: None '''
 
-        container = self.driver.find_element_by_xpath(f'{tag_container}//div[@data-test-id="vase-carousel"]')
-        tag_elements = container.find_elements_by_xpath('.//div[@data-test-id="vase-tag"]//a')
-        self.current_dict["tag_list"] = [tag.get_attribute('textContent') for tag in tag_elements]
-
-    def _grab_story_image_srcs(self) -> None:
-
-        ''' Function in testing. Third page layout (story) that has different html
-            tabs to target to get info I need. Should be able to integrate later on
-            in to one larger function which pulls for xpath dict. '''
-        
         try:
-            _ = WebDriverWait(self.driver, 0.5).until(
-                    EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
-                )
-            image_container_list = self.driver.find_elements_by_xpath('//div[@aria-label="Story Pin image"]')
-            story_style_list = [image.get_attribute('style') for image in image_container_list]
-            if not story_style_list:
-                self.current_dict["is_image_or_video"] = 'video'
-                video_container = self.driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                self.current_dict["temp"] = video_container.get_attribute('poster')
-            else: 
-                self.current_dict["is_image_or_video"] = 'story'
-                self.current_dict["temp"] = story_style_list
-            # This will only grab the first couple (4 I believe) images in a story post.
-            # Could improve.
+            container = WebDriverWait(self.driver, 0.5).until(
+                EC.presence_of_element_located((By.XPATH, f'{tag_container}//div[@data-test-id="vase-carousel"]'))
+            )
+            tag_elements = container.find_elements_by_xpath('.//div[@data-test-id="vase-tag"]//a')
+            self.current_dict["tag_list"] = [tag.get_attribute('textContent') for tag in tag_elements]
         except:
-            self.current_dict["is_image_or_video"] = 'strange story video hybrid, needs more work'
-            video_container = self.driver.find_elements_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-            self.current_dict["temp"] = [video.get_attribute('poster') for video in video_container]
+            self.current_dict["tag_list"] = 'No Tags Available'
 
     def _grab_image_src(self) -> None:
 
@@ -370,7 +287,71 @@ class PinterestScraper:
             self.current_dict["video_thumbnail_src"] = video_element.get_attribute('poster')
             # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
 
-    def grab_page_data(self) -> None:
+    def _grab_story_image_srcs(self) -> None:
+
+        ''' Function in testing. Third page layout (story) that has different html
+            tabs to target to get info I need. Should be able to integrate later on
+            in to one larger function which pulls for xpath dict. '''
+        
+        try:
+            _ = WebDriverWait(self.driver, 0.5).until(
+                    EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
+                )
+            image_container_list = self.driver.find_elements_by_xpath('//div[@aria-label="Story Pin image"]')
+            story_style_list = [image.get_attribute('style') for image in image_container_list]
+            if not story_style_list:
+                self.current_dict["is_image_or_video"] = 'video(story format)'
+                video_container = self.driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
+                self.current_dict["temp"] = video_container.get_attribute('poster')
+            else: 
+                self.current_dict["is_image_or_video"] = 'story'
+                self.current_dict["temp"] = story_style_list
+            # This will only grab the first couple (4 I believe) images in a story post.
+            # Could improve.
+        except:
+            self.current_dict["is_image_or_video"] = 'strange story video hybrid, needs more work'
+            video_container = self.driver.find_elements_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
+            self.current_dict["temp"] = [video.get_attribute('poster') for video in video_container]
+
+    def _grab_all_users_and_counts(self) -> None:
+
+        ''' Defines a function that checks if a user is officially recognised or
+            a story. If official, runs official-user data grab, if not, runs non-official-user
+            data grab or story_grab if a story.
+        
+            Arguments: None
+            
+            Returns: None '''
+
+        if (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
+            self._grab_title(self.xpath_dict['reg_title_element'])
+            self._grab_description(self.xpath_dict['desc_container'], self.xpath_dict['desc_element'])
+            self._grab_user_and_count(
+                self.xpath_dict['official_user_container'],
+                self.xpath_dict['official_user_element']
+            )
+            self._grab_tags(self.xpath_dict['tag_container'])
+            self._grab_image_src()
+        elif (self.driver.find_elements_by_xpath('//div[@data-test-id="CloseupDetails"]')):
+            self._grab_title(self.xpath_dict['reg_title_element'])
+            self._grab_description(self.xpath_dict['desc_container'], self.xpath_dict['desc_element'])
+            self._grab_user_and_count(
+                self.xpath_dict['non_off_user_container'],
+                self.xpath_dict['non_off_user_element']
+            )
+            self._grab_tags(self.xpath_dict['tag_container'])
+            self._grab_image_src()
+        else:
+            self._grab_title(self.xpath_dict['h1_title_element'])
+            self.current_dict["description"] = 'No description available in this page format'
+            self._grab_user_and_count(
+                self.xpath_dict['non_off_user_container'],
+                self.xpath_dict['non_off_user_element']
+            )
+            self._grab_tags(self.xpath_dict['story_tag_container'])
+            self._grab_story_image_srcs()
+
+    def _grab_page_data(self) -> None:
 
         ''' Defines a function which combines all data grabs and loops
             though all page links to grab the data from each page
@@ -382,6 +363,9 @@ class PinterestScraper:
         # Need to make several sub dicts:
         # Need to append current dict to relevant sub dict.
 
+        category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+
+
         for (cat, link) in list(self.link_set):
             category = cat.split("/")[0]
             self.counter_dict[f"{category}"] += 1
@@ -391,7 +375,7 @@ class PinterestScraper:
             self._grab_all_users_and_counts()
             self.main_dict[f"{category}"][f"{category}_{self.counter_dict[category]}"] = self.current_dict
         
-    def data_dump(self) -> None:
+    def _data_dump(self) -> None:
 
         ''' Defines a function which dumps the compiled dictionary
             to a json file.
@@ -408,30 +392,22 @@ class PinterestScraper:
             name = category.split('/')[4]
             with open(f'{name}/{name}.json', 'w') as loading:
                 json.dump(self.main_dict[f"{name}"], loading)
-            
-
-    # def _save_all_images(self) -> None: 
-    #     """Download images that are not a profile picture
-    #     """
-    #     for category,link in self.image_set:
-    #         if '75x75' not in link: # Download image if it is not a profile picture
-    #             self.save_path = f'{category.split("/")[0]}'
-    #             self._get_image_source(link)
-    #             self.category_image_count[category] += 1
-    #             self._download_image(self.category_image_count[category])
-    #     self.driver.quit()  # Terminate the webdriver and close all windows
 
     def get_category_data(self) -> None:
         """Grab all image links, then download all images
         """
+        category_link_dict = self._get_category_links(self.xpath_dict['categories_container'])
+        self._print_options(category_link_dict)
+        self._get_user_input(category_link_dict)
+        self._create_folders('../data')
         self._grab_images_src()
-        # self._save_all_images()
-        self.grab_page_data()
-        self.data_dump()
+        self._grab_page_data()
+        self._data_dump()
 
     # Things that need work.
     # Seem to be pages that lack tags. Need an if statement or webdriverwait.
     # Need to make extract links with input values.
+    # Find a way to combine grab_image_src for story style and regular.
 
 if __name__ == "__main__":
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
