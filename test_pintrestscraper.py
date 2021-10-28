@@ -30,6 +30,10 @@ class PinterestScraperTestCase(unittest.TestCase):
         self.category_link_list = []
         self.save_path = None
     
+    def tearDown (self):
+        self.driver.close()  #after each unittest, it is closed
+
+    
     @given(st.text())       # AM I SUPOSED TO DO A FUNCTIONALITY TEST AND A 'GIVEN' TEST FOR EACH FUNCTION? (SO 2 FOR EACH?)
     def test_get_category_links(self):
         '''
@@ -58,6 +62,7 @@ class PinterestScraperTestCase(unittest.TestCase):
         This function tests if the available categories are printed out
         '''
         available_categories = pinterestScraper.PinterestScraper._print_options
+        assert #that the options ar eprinted out for the user
         pass
 
     @given
@@ -69,15 +74,12 @@ class PinterestScraperTestCase(unittest.TestCase):
 
 
      @given(st.text()) 
-    def test_create_folders(self): # how would we test to see if it creates folders properly?
+    def test_create_folders(self): 
         '''
         This function is used to test if folders are created properly
         '''
-        actual_folders = pinterestScraper.PinterestScraper._create_folders()  #folders made by our class
-                                             # maybe the test should be if the object type is a folder
-                                             #
-                                             # 
-        test = random.choice(actual_folders) #picks a folder at random 
+        actual_folders = pinterestScraper.PinterestScraper._create_folders()  
+        test = random.choice(actual_folders) #picks a random folder
         try:
             f = open(test)            #maybe use 'with' statment here - opens and closes file in 1 step 
         except:
@@ -92,7 +94,7 @@ class PinterestScraperTestCase(unittest.TestCase):
         This function is used to test if correct src links are extracted
         '''
         actual_links = pinterestScraper.PinterestScraper._extract_links
-        test_link = [#grab 3 diffferent ones from the acc page]
+        test_links = [#grab 3 diffferent ones from the acc page]
         pass
     
     @given(st.text())
@@ -133,8 +135,5 @@ class PinterestScraperTestCase(unittest.TestCase):
         pass
 
 
-
-#testing possible inputs :
-
-from hypothesis import given
-
+if __name__ == "__main__":
+    unittest.main()  # ' run all of the unittests we have defined'
