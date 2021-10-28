@@ -399,6 +399,9 @@ class PinterestScraper:
         self.grab_page_data()
         self.data_dump()
 
+    # Things that need work.
+    # Seem to be pages that lack tags. Need an if statement or webdriverwait.
+
 if __name__ == "__main__":
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper.get_category_data()
