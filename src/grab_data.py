@@ -88,7 +88,7 @@ class PinterestScraperExtra(PinterestScraper):
         title_text = title_element.get_attribute('textContent')
         self.current_dict["title"] = title_text
 
-    def _grab_all_users_and_counts(self) -> None:
+    def _official_vs_non_official(self) -> None:
 
         ''' Defines a function that checks if a user is officially recognised
             If official, runs official-user data grab, if not, runs non-official-user
@@ -99,15 +99,23 @@ class PinterestScraperExtra(PinterestScraper):
             Returns: None '''
 
         if not (self.driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
+            self._grab_title()
+            self._grab_description()
             self._grab_user_and_count(
                 self.xpath_dict['non_off_user_container'],
                 self.xpath_dict['non_off_user_element']
             )
+            self._grab_tags()
+            self._grab_image_src()
         else:
+            self._grab_title()
+            self._grab_description()
             self._grab_user_and_count(
                 self.xpath_dict['official_user_container'],
                 self.xpath_dict['official_user_element']
             )
+            self._grab_tags()
+            self._grab_image_src()
 
     def _grab_user_and_count(self, dict_container, dict_element) -> None:
 

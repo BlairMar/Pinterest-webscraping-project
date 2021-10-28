@@ -10,8 +10,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
 
-
-
 """
 Class to perform webscraping on the Pinterest website.
 """
@@ -134,7 +132,7 @@ class PinterestScraper:
         sleep(2)
 
         # Keep scrolling down for a number of times
-        for _ in range(1):
+        for _ in range(3):
             self.driver.execute_script(f"window.scrollTo(0, {Y})")  # Scroll down the page
             sleep(1)
             # Store the link of each image if the page contains the targeted images
@@ -289,8 +287,8 @@ class PinterestScraper:
             
             Returns: None '''
 
-        tag_container = self.driver.find_element_by_xpath(f'{tag_container}//div[@data-test-id="vase-carousel"]')
-        tag_elements = tag_container.find_elements_by_xpath('.//div[@data-test-id="vase-tag"]//a')
+        container = self.driver.find_element_by_xpath(f'{tag_container}//div[@data-test-id="vase-carousel"]')
+        tag_elements = container.find_elements_by_xpath('.//div[@data-test-id="vase-tag"]//a')
         self.current_dict["tag_list"] = [tag.get_attribute('textContent') for tag in tag_elements]
 
     def _grab_story_image_srcs(self) -> None:
