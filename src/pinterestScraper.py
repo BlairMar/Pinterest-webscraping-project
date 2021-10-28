@@ -9,6 +9,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
+# from webdriver_manager.chrome import ChromeDriverManager
+
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -43,6 +45,7 @@ class PinterestScraper:
         self.category_image_count = defaultdict(int)
         self.root = root
         self.driver = webdriver.Chrome()
+#        self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.image_set = set()
         self.category_link_dict = []
         self.save_path = None
@@ -61,54 +64,75 @@ class PinterestScraper:
         }
         
         
-    def _get_category_links(self) -> None:
+    def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories
+        
+        Args
+        ---------------------
+        categories_xpath: str
+        
+        Return
+        ---------------------
+        dict: dictionary containing the href of each category
         """
         self.driver.get(self.root)
         sleep(2)
         # Get the a list of all the categories
-        categories = self.driver.find_elements_by_xpath('//div[@data-test-id="interestRepContainer"]//a')
+        categories = self.driver.find_elements_by_xpath(categories_xpath)
         # Extract the href
         self.category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
 
-    def _print_options(self):
-        """Print all categories available on the homepage
-        """
-        print(f"\n The options (Total {len(self.category_link_dict)})  are:")
-        for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
-            print(f"\t {idx}: {category.replace('https://www.pinterest.co.uk/ideas/', '').split('/')[0]}")
+        return self.category_link_dict
 
-    def _get_user_input(self):  
+    def _print_options(self, category_link_dict: dict):
+        """Print all categories available on the homepage
+        
+        Args
+        ---------------------
+        category_link_dict: dict
+        """
+        print(f"\n The options (Total {len(category_link_dict)})  are:")
+        for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
+            print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
+
+    def _get_user_input(self, category_link_dict: dict):  
         """Let user decide how many and which categories to download
+        
+        Args
+        ---------------------
+        category_link_dict: dict
         """
         try:    
             categories_num = int(input(f"\nFrom how many categories do you want to download images?: \n"))
-            assert categories_num <= len(self.category_link_dict)
+            assert categories_num <= len(category_link_dict)
         except:  
-            raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.") 
+            raise Exception(f"Input cannot be greater than {len(category_link_dict)}.") 
         pass
 
         print(categories_num)
         self.selected_category = {}
-        if categories_num == len(self.category_link_dict):
-            self.selected_category = self.category_link_dict
+        if categories_num == len(category_link_dict):
+            self.selected_category = category_link_dict
         else:
             print("Which one(s) [Pick number(s)]?: ")
             selected_category = []
             try:
                 for i in range(categories_num):
                     choice = int(input(f"{categories_num - i} choices left: "))
-                    assert choice < len(self.category_link_dict)
-                    self.selected_category[i+1] = self.category_link_dict[choice]
+                    assert choice < len(category_link_dict)
+                    self.selected_category[i+1] = category_link_dict[choice]
             except:
                 raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.")
             
         print(f"Categories selected: {self.selected_category.values()}")
 
-    def _create_folders(self) -> None:
+    def _create_folders(self, directory_path: str) -> None:
         """Create corresponding folders to store images of each category
+        Args
+        ---------------------
+        directory_path: str
         """
-        self.root_save_path = '../data'
+        self.root_save_path = directory_path
 
         # Create a folder named data to store a folder for each category
         if not os.path.exists(f'{self.root_save_path}'):
@@ -123,9 +147,14 @@ class PinterestScraper:
             if not os.path.exists(f'{self.root_save_path}/{name}'):
                 os.makedirs(f'{self.root_save_path}/{name}')
 
-    def _extract_links(self) -> None:
+    def _extract_links(self, container_xpath: str, elements_xpath: str) -> None:
         """Move to the page of a category and extract src attribute for the images 
             at the bottom of the page
+            
+        Args
+        ---------------------
+        container_xpath: str 
+        elements_xpath: str
         """
         self.driver.get(self.root + self.category)
         Y = 10**6   # Amount to scroll down the page   
@@ -166,19 +195,20 @@ class PinterestScraper:
         urllib.request.urlretrieve(self.src, 
                                 f"{self.root_save_path}/{self.save_path}/{self.save_path}_{i}.jpg")
 
-    def _grab_image_srcs(self) -> None:
+    def _grab_images_src(self, container_xpath: str, elements_xpath: str) -> None:
         """Get src links for all images
+        
+        Args
+        ---------------------
+        container_xpath: str 
+        elements_xpath: str
         """
-        self._get_category_links()
-        self._print_options()
-        self._get_user_input()
-        self._create_folders()
         
         # Loop through each category
         for category in self.selected_category.values():
-            self.category = category.replace('https://www.pinterest.co.uk/ideas/', "")
+            self.category = category.replace(self.root, "")
             self.category_image_count[self.category] = 0
-            self._extract_links()
+            self._extract_links(container_xpath, elements_xpath)
 
     def _grab_title(self) -> None:
 
@@ -394,13 +424,14 @@ class PinterestScraper:
     def get_category_data(self) -> None:
         """Grab all image links, then download all images
         """
-        self._grab_image_srcs()
+        self._grab_images_src()
         # self._save_all_images()
         self.grab_page_data()
         self.data_dump()
 
     # Things that need work.
     # Seem to be pages that lack tags. Need an if statement or webdriverwait.
+    # Need to make extract links with input values.
 
 if __name__ == "__main__":
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
