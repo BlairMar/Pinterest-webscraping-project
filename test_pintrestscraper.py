@@ -80,7 +80,7 @@ class PinterestScraperTestCase(unittest.TestCase):
         self.assertIn(enumerate(available_categories), test_available_categories, error_message) 
     
 
-    @given(st.integers().filter(lambda x: x in range(1,23)))                  #should only be able to input 1-22
+    @given(st.integers().filter(lambda x: x in range(1,23)))                  #should only be able to input 1-22, so no errors should aris from hypothesis test
     def test_get_user_inputs(self):
          '''
          This function tests if the user's inputs can be inputted successfully
@@ -88,19 +88,20 @@ class PinterestScraperTestCase(unittest.TestCase):
          pass
 
 
-#      #@given(st.text()) 
-#     def test_create_folders(self,directory_path): 
-#         '''
-#         This function is used to test if folders are created properly
-#         '''
-#         actual_folders = pinterestScraper.PinterestScraper._create_folders()  
-#         test = random.choice(actual_folders) #picks a random folder
-#         try:
-#             f = open(test)            #maybe use 'with' statment here - opens and closes file in 1 step 
-#         except:
-#             print ('File is not accessible!')
-#         finally:
-#             f.close()
+
+    def test_create_folders(self): 
+         '''
+         This function is used to test if folders can be opneded after created
+         '''
+         test_folders = pinterestScraper.PinterestScraper._create_folders('/Users/danielzakaiem/Documents')   #??
+         test = random.choice(test_folders) #picks a random folder
+         try:
+            f = open(test)            #maybe use 'with' statment here - opens and closes file in 1 step 
+         except:
+             print ('File is not accessible!')
+         finally:
+             f.close()
+     
         
 
 #     @given(st.text())
