@@ -165,7 +165,7 @@ class PinterestScraper:
         sleep(2)
 
         # Keep scrolling down for a number of times
-        for _ in range(2):
+        for _ in range(1):
             self.driver.execute_script(f"window.scrollTo(0, {Y})")  # Scroll down the page
             sleep(1)
             # Store the link of each image if the page contains the targeted images
@@ -233,18 +233,21 @@ class PinterestScraper:
             Arguments: dict_container, dict_element
             
             Returns: None '''
-
-        container = self.driver.find_element_by_xpath(dict_container)
-        poster_element = container.find_element_by_xpath(dict_element)          
-        self.current_dict["poster_name"] = poster_element.get_attribute('textContent')
-        follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
-        followers = follower_element[-1].get_attribute('textContent')
-        # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
-        # Do not want the text "followers" on the end to clean the data somewhat.
-        if followers == '': # If the element has no associated text, there are no followers. Think this is redunant for official users.
-            self.current_dict["follower_count"] = '0'
-        else:
-            self.current_dict["follower_count"] = followers.split()[0]
+        try:
+            container = self.driver.find_element_by_xpath(dict_container)
+            poster_element = container.find_element_by_xpath(dict_element)          
+            self.current_dict["poster_name"] = poster_element.get_attribute('textContent')
+            follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
+            followers = follower_element[-1].get_attribute('textContent')
+            # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
+            # Do not want the text "followers" on the end to clean the data somewhat.
+            if followers == '': # If the element has no associated text, there are no followers. Think this is redunant for official users.
+                self.current_dict["follower_count"] = '0'
+            else:
+                self.current_dict["follower_count"] = followers.split()[0]
+        except:
+            self.current_dict['Error'] = 'Some unknown error ocured when trying to grab user info.'
+            print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
 
@@ -274,44 +277,53 @@ class PinterestScraper:
             Arguments: None
             
             Returns: None '''
-
-        try: # Need this try statement to see if image in an image or other media type.
-            image_element = WebDriverWait(self.driver, 0.5).until(
-                EC.presence_of_element_located((By.XPATH, '//div[@data-test-id="pin-closeup-image"]//img'))
-            )
-            self.current_dict["is_image_or_video"] = 'image'
-            self.current_dict["image_src"] = image_element.get_attribute('src')
+        try:
+            try: # Need this try statement to see if image in an image or other media type.
+                image_element = WebDriverWait(self.driver, 0.5).until(
+                    EC.presence_of_element_located((By.XPATH, '//div[@data-test-id="pin-closeup-image"]//img'))
+                )
+                self.current_dict["is_image_or_video"] = 'image'
+                self.current_dict["image_src"] = image_element.get_attribute('src')
+            except:
+                video_element = self.driver.find_element_by_xpath('//video')
+                self.current_dict["is_image_or_video"] = 'video'
+                self.current_dict["video_thumbnail_src"] = video_element.get_attribute('poster')
+                # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
         except:
-            video_element = self.driver.find_element_by_xpath('//video')
-            self.current_dict["is_image_or_video"] = 'video'
-            self.current_dict["video_thumbnail_src"] = video_element.get_attribute('poster')
-            # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
+            self.current_dict['Error'] = 'Some unknown error occured when trying to grab img src.'
+            print('Image grab Error. Possible embedded video (youtube).')
+
+    # Need to look into fixing embedded youtube videos.
 
     def _grab_story_image_srcs(self) -> None:
 
         ''' Function in testing. Third page layout (story) that has different html
             tabs to target to get info I need. Should be able to integrate later on
             in to one larger function which pulls for xpath dict. '''
-        
-        try:
-            _ = WebDriverWait(self.driver, 0.5).until(
-                    EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
-                )
-            image_container_list = self.driver.find_elements_by_xpath('//div[@aria-label="Story Pin image"]')
-            story_style_list = [image.get_attribute('style') for image in image_container_list]
-            if not story_style_list:
-                self.current_dict["is_image_or_video"] = 'video(story format)'
-                video_container = self.driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                self.current_dict["temp"] = video_container.get_attribute('poster')
-            else: 
-                self.current_dict["is_image_or_video"] = 'story'
-                self.current_dict["temp"] = story_style_list
-            # This will only grab the first couple (4 I believe) images in a story post.
-            # Could improve.
+        try: 
+            try:
+                _ = WebDriverWait(self.driver, 0.5).until(
+                        EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
+                    )
+                image_container_list = self.driver.find_elements_by_xpath('//div[@aria-label="Story Pin image"]')
+                story_style_list = [image.get_attribute('style') for image in image_container_list]
+                if not story_style_list:
+                    self.current_dict["is_image_or_video"] = 'video(story page format)'
+                    video_container = self.driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
+                    self.current_dict["temp"] = video_container.get_attribute('poster')
+                    # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
+                else: 
+                    self.current_dict["is_image_or_video"] = 'story'
+                    self.current_dict["temp"] = story_style_list
+                # This will only grab the first couple (4 I believe) images in a story post.
+                # Could improve.
+            except:
+                self.current_dict["is_image_or_video"] = 'story of videos'
+                video_container = self.driver.find_elements_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
+                self.current_dict["temp"] = [video.get_attribute('poster') for video in video_container]
         except:
-            self.current_dict["is_image_or_video"] = 'strange story video hybrid, needs more work'
-            video_container = self.driver.find_elements_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-            self.current_dict["temp"] = [video.get_attribute('poster') for video in video_container]
+            self.current_dict['Error'] = 'Some unknown error occured when grabbing story img src'
+            print('Story image grab error')
 
     def _grab_all_users_and_counts(self) -> None:
 
@@ -343,7 +355,7 @@ class PinterestScraper:
             self._grab_image_src()
         else:
             self._grab_title(self.xpath_dict['h1_title_element'])
-            self.current_dict["description"] = 'No description available in this page format'
+            self.current_dict["description"] = 'No description available Story format'
             self._grab_user_and_count(
                 self.xpath_dict['non_off_user_container'],
                 self.xpath_dict['non_off_user_element']
@@ -405,9 +417,8 @@ class PinterestScraper:
         self._data_dump()
 
     # Things that need work.
-    # Seem to be pages that lack tags. Need an if statement or webdriverwait.
-    # Need to make extract links with input values.
     # Find a way to combine grab_image_src for story style and regular.
+    # Grab embedded youtube vids.
 
 if __name__ == "__main__":
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
