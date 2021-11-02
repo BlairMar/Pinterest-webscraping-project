@@ -44,6 +44,8 @@ class PinterestScraper:
         self.category_link_dict = []
         self.save_path = None
         
+         
+        
         
     def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories

@@ -1,5 +1,7 @@
 from selenium import webdriver
 import unittest
+
+from webdriver_manager import driver
 from src import pinterestScraper
 from hypothesis import strategies as st
 from hypothesis import given       
@@ -7,7 +9,12 @@ import hypothesis.strategies as st
 import random
 import requests
 from collections import defaultdict
+import os.path
+import time
 
+
+
+#ADD TIMEIT TESTS TO SEE HOW LONG EACH METHOD TAKES - PUT IN TEST_CLASS AT START OF EACH METHOD 'IT TOOK .. TO RUN..'
 
 
 class PinterestScraperTestCase(unittest.TestCase):
@@ -27,81 +34,97 @@ class PinterestScraperTestCase(unittest.TestCase):
         '''
         This function is used to set up the scenario for each test
         '''
-            # we will be testing the scraper with these specific attributes:
+            # we will be testing the scraper with these specific attributes:(ie:this instance of the class will be getting tested)
         self.pinterest_scraper = pinterestScraper.PinterestScraper('https://www.pinterest.co.uk/ideas/') #creating an instance 
-
-
+     
         
-
     def tearDown (self):
         self.pinterest_scraper.driver.close()  #after each unittest, we close the instance of the class
 
-    
+        
     def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
         '''
         This funtion is used to see if a dictionary is created
         '''
-        test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+        test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') # u must refer back to the exact instance of the class like here
         self.assertIsInstance(test_dict, dict) #test if output is dictionary
-    
-    # CAN HAVE MULTIPLE TESTS FOR SAME FUNCTION (AS SEPERATE TESTS OVS)
+        
     
     def test_get_category_links(self):
-        '''
-        This function is used to test if correct links are retreived
-        '''
-        test_links = pinterestScraper.PinterestScraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') 
-        hand_picked_links = ['https://www.pinterest.co.uk/ideas/halloween/915794205972/',  #haveto reeneter these before the test?
-                   'https://www.pinterest.co.uk/ideas/holidays/910319220330/',
-                   'https://www.pinterest.co.uk/ideas/animals/925056443165/']                
+         '''
+         This function is used to test if correct links are retreived
+         '''
+         test_href_links = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') # outputs an enumerated dictionary of the href links
         
-        self.assertTrue(hand_picked_links in test_links)
+         hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
+                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
+                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
+                                       
+         hand_picked_category_hrefs = []
+         for xpath in hand_picked_category_xpaths:
+             hand_picked_category_hrefs.append(self.pinterest_scraper.driver.find_element_by_xpath(xpath).get_attribute('href'))
+         counter = 0
+         for ele in hand_picked_category_hrefs:   
+            if ele in test_href_links.values():
+                counter +=1
+                print(counter)
+         self.assertEqual(counter, 3) # add self to all asserts
 
-     #    assert ((test_links.count(hand_picked_links[0])) > 0) and ((test_links.count(hand_picked_links[1])) > 0) and ((test_links.count(hand_picked_links[2])) > 0)
+         #see how long the function takes to run:
+         start = time.time()
+         test_href_links = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+         end = time.time()
+         print (f'It had taken {end - start} seconds to run this method')
         
-        
-        # for link in test_links:
-        #      if link == (hand_picked_links[0] or hand_picked_links[1] or hand_picked_links[2]):
-        #          print ("correct links retreived!")
-        #          break
-        #      else:
-        #         pass 
+
             
 
-     
-    def test_print_options(self):
-        '''
-        This function tests if the available categories are printed out
-        '''
+    #     #DONT NEED:
+    # def test_print_options(self):
+    #       '''
+    #       This function tests if the available categories are printed out
+    #       '''
+    #       category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') # this is the dictionary we will input (this func needs a dict input)
+    #       test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
+    #       print (test_available_categories) # this object is a 'Nontype'- how am i supposed to chek if the correct categories are ina  nontype?  HOW DO I MAKE THIS PRINTED OFF WORDS INTO A LIST SO I CAN CHECK IF CORRECT  WORDS ARE IN  THERE?
+          
+    #       actual_available_categories = ['halloween', 'animals', 'architecture', 'art', 'beauty', 'design', 'diy-and-crafts', 'education', 'electronics', 'event-planning', 'finance', 'food-and-drink', 'lawn-and-garden', 'home-decor', 'mens-fashion', 'quotes', 'tattoos', 'travel', 'vehicles', 'weddings', 'womens-fashion' ]
+    #       print (dict(enumerate(actual_available_categories)))
+          
+                    #.items() splits the dictionary elements into tuples
+        #   error_message = "Failed! did not collect all available categories"
+        #   self.assertIn(enumerate(actual_available_categories), test_available_categories, error_message) 
+        
+    # #doesnt work 
+    # @given(st.dictionaries)    # Want to solely test which inputs can be used with this function          
+    # def test_get_user_input(self):
+    #     '''
+    #      This function tests if the user's inputs can be inputted successfully
+    #     '''
+    #     pass
+
+
     
-        test_available_categories = pinterestScraper.PinterestScraper._print_options('//div[@data-test-id="interestRepContainer"]//a')
-        available_categories = ['halloween', 'animals', 'architecture', 'art', 'beauty', 'design', 'diy-and-crafts', 'education', 'electronics', 'event-planning', 'finance', 'food-and-drink', 'lawn-and-garden', 'home-decor', 'mens-fashion', 'quotes', 'tattoos', 'travel', 'vehicles', 'weddings', 'womens-fashion' ]
-        error_message = "Failed! did not collect all available categories"
-        self.assertIn(enumerate(available_categories), test_available_categories, error_message) 
     
+    
+    # def test_create_folders(self): 
+    #     '''
+    #     This function is used to test if folders can be opneded after created
+    #     '''
+    #     self.selected_category  = {}  #i think we need selected_category to be the catgeories selcted in the previous method (get_user_input)
+    #     test_folders = pinterestScraper.PinterestScraper._create_folders(self, directory_path='/Users/danielzakaiem/Documents/')
+    #      #??- this should create folders?
+       
+    #     testing = 0
+    #     if os.path.isfile(test_folders):
+    #          print('File exists')
+    #          testing += 1
+    #     else:
+    #          print ('File does not exist')
+    #     self.assertEqual(testing, 1) # asserts if file exists
 
-    @given(st.integers().filter(lambda x: x in range(1,23)))                  #should only be able to input 1-22, so no errors should aris from hypothesis test
-    def test_get_user_inputs(self):
-         '''
-         This function tests if the user's inputs can be inputted successfully
-         '''
-         pass
 
-
-
-    def test_create_folders(self): 
-         '''
-         This function is used to test if folders can be opneded after created
-         '''
-         test_folders = pinterestScraper.PinterestScraper._create_folders('/Users/danielzakaiem/Documents')   #??
-         test = random.choice(test_folders) #picks a random folder
-         try:
-            f = open(test)            #maybe use 'with' statment here - opens and closes file in 1 step 
-         except:
-             print ('File is not accessible!')
-         finally:
-             f.close()
-     
+        
         
 
 #     @given(st.text())
@@ -147,4 +170,4 @@ class PinterestScraperTestCase(unittest.TestCase):
 #         pass
     
 if __name__ == "__main__":
-    unittest.main(argv= [''],verbosity=2,exit =False)  # ' run all of the unittests we have defined'
+    unittest.main(argv= [''],verbosity=2,exit =False)  # ' run all of the unittests we have defined
