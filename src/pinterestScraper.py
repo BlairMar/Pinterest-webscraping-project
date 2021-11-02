@@ -246,7 +246,7 @@ class PinterestScraper:
             else:
                 self.current_dict["follower_count"] = followers.split()[0]
         except:
-            self.current_dict['Error'] = 'Some unknown error ocured when trying to grab user info.'
+            self.current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when trying to grab user info.'
             print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
@@ -267,6 +267,12 @@ class PinterestScraper:
         except:
             self.current_dict["tag_list"] = 'No Tags Available'
 
+    def _download_image(self, src: str) -> None:
+        """Download the image
+        """
+        urllib.request.urlretrieve(src, 
+                                f"{self.root_save_path}/{self.category}/{self.category}_{self.counter_dict[self.category]}.jpg")
+
     def _grab_image_src(self) -> None:
 
         ''' Defines a function that grabs the image src from a Pinterest page
@@ -284,13 +290,15 @@ class PinterestScraper:
                 )
                 self.current_dict["is_image_or_video"] = 'image'
                 self.current_dict["image_src"] = image_element.get_attribute('src')
+                self._download_image(self.current_dict["image_src"])
             except:
                 video_element = self.driver.find_element_by_xpath('//video')
                 self.current_dict["is_image_or_video"] = 'video'
-                self.current_dict["video_thumbnail_src"] = video_element.get_attribute('poster')
+                self.current_dict["img_src"] = video_element.get_attribute('poster')
+                self._download_image(self.current_dict["img_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
         except:
-            self.current_dict['Error'] = 'Some unknown error occured when trying to grab img src.'
+            self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when trying to grab img src.'
             print('Image grab Error. Possible embedded video (youtube).')
 
     # Need to look into fixing embedded youtube videos.
@@ -305,24 +313,28 @@ class PinterestScraper:
                 _ = WebDriverWait(self.driver, 0.5).until(
                         EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
                     )
-                image_container_list = self.driver.find_elements_by_xpath('//div[@aria-label="Story Pin image"]')
-                story_style_list = [image.get_attribute('style') for image in image_container_list]
-                if not story_style_list:
+                image_container = self.driver.find_element_by_xpath('//div[@aria-label="Story Pin image"]')
+                image = image_container.get_attribute('style')
+                if not image:
                     self.current_dict["is_image_or_video"] = 'video(story page format)'
                     video_container = self.driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                    self.current_dict["temp"] = video_container.get_attribute('poster')
+                    self.current_dict["img_src"] = video_container.get_attribute('poster')
+                    self._download_image(self.current_dict["img_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
                 else: 
                     self.current_dict["is_image_or_video"] = 'story'
-                    self.current_dict["temp"] = story_style_list
+                    self.current_dict["img_src"] = image
+                    self._download_image(self.current_dict["img_src"])
+                    
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
                 self.current_dict["is_image_or_video"] = 'story of videos'
-                video_container = self.driver.find_elements_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                self.current_dict["temp"] = [video.get_attribute('poster') for video in video_container]
+                video_container = self.driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
+                self.current_dict["img_src"] = video_container.get_attribute('poster')
+                self._download_image(self.current_dict["img_src"])
         except:
-            self.current_dict['Error'] = 'Some unknown error occured when grabbing story img src'
+            self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
             print('Story image grab error')
 
     def _grab_all_users_and_counts(self) -> None:
@@ -379,13 +391,13 @@ class PinterestScraper:
 
 
         for (cat, link) in list(self.link_set):
-            category = cat.split("/")[0]
-            self.counter_dict[f"{category}"] += 1
+            self.category = cat.split("/")[0]
+            self.counter_dict[f"{self.category}"] += 1
             self.current_dict = {}
             self.current_link = link
             self.driver.get(self.current_link)
             self._grab_all_users_and_counts()
-            self.main_dict[f"{category}"][f"{category}_{self.counter_dict[category]}"] = self.current_dict
+            self.main_dict[f"{self.category}"][f"{self.category}_{self.counter_dict[self.category]}"] = self.current_dict
         
     def _data_dump(self) -> None:
 
