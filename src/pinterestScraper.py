@@ -7,7 +7,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
+import tempfile
+import boto3 
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -42,8 +44,8 @@ class PinterestScraper:
         self.category = None
         self.category_image_count = defaultdict(int)
         self.root = root
-        self.driver = webdriver.Chrome()
-        # self.driver = webdriver.Chrome(ChromeDriverManager().install())
+        # self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.image_set = set()
         self.category_link_dict = []
         self.save_path = None
@@ -52,6 +54,9 @@ class PinterestScraper:
         self.main_dict = {}
         self.counter_dict = {} # A counter dict to order the data we grab from each page.
         self.current_link = ''
+        self._cat_imgs_to_save = {}
+        self.s3_client = boto3.client('s3')
+        self.to_s3 = False
         self.xpath_dict = {
             'official_user_container': '//div[@data-test-id="official-user-attribution"]',
             'official_user_element': './/div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]',
@@ -118,19 +123,47 @@ class PinterestScraper:
         if categories_num == len(category_link_dict):
             self.selected_category = category_link_dict
         else:
-            print("Which one(s) [Pick number(s)]?: ")
+            print("\nWhich one(s) [Pick number(s)]?: ")
             selected_category = []
             try:
                 for i in range(categories_num):
                     choice = int(input(f"{categories_num - i} choices left: "))
                     assert choice < len(category_link_dict)
                     self.selected_category[i+1] = category_link_dict[choice]
+                    self._catgories_to_save_imgs(category_link_dict[choice])
             except:
                 raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.")
             
         print(f"Categories selected: {self.selected_category.values()}")
 
-    def _create_folders(self, directory_path: str) -> None:
+    def _catgories_to_save_imgs(self, category):
+        to_save = input('\nDo you wish to save the images? [y/n]: ')
+        cat_name = category.split('/')[4]
+        if to_save == 'y':
+            self._cat_imgs_to_save[cat_name] = True
+        elif to_save == 'n':
+            self._cat_imgs_to_save[cat_name] = False
+        else:
+            raise Exception("Invalid input.")
+
+    def _save_to_cloud_or_local(self):
+        for category in self.selected_category.values():
+            name = category.split('/')[4]
+            self.main_dict[f"{name}"] = {}
+            self.counter_dict[f"{name}"] = 0
+        choice = input('\nDo you wish to save the data on AWS S3 (y) or locally (n)? [y/n]: ')
+        if choice == 'y':
+            self.to_s3 = True
+            self.s3_name = input('Name of S3 bucket: ')
+            print(self.s3_name, type(self.s3_name))
+        elif choice == 'n':
+            self.to_s3 = False
+            self._create_folders_locally('../data')
+        else:
+            raise Exception("Invalid input")
+
+
+    def _create_folders_locally(self, directory_path: str) -> None:
         """Create corresponding folders to store images of each category
         Args
         ---------------------
@@ -145,13 +178,13 @@ class PinterestScraper:
         # Create the category folders if they do not already exist
         for category in self.selected_category.values():
             name = category.split('/')[4]
-            self.main_dict[f"{name}"] = {}
-            self.counter_dict[f"{name}"] = 0
+            # self.main_dict[f"{name}"] = {}
+            # self.counter_dict[f"{name}"] = 0
             print(f"Category folder: {name}")
             if not os.path.exists(f'{self.root_save_path}/{name}'):
                 os.makedirs(f'{self.root_save_path}/{name}')
 
-    def _extract_links(self, container_xpath: str, elements_xpath: str) -> None:
+    def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
         """Move to the page of a category and extract src attribute for the images 
             at the bottom of the page
             
@@ -165,7 +198,7 @@ class PinterestScraper:
         sleep(2)
 
         # Keep scrolling down for a number of times
-        for _ in range(1):
+        for _ in range(n_scrolls):
             self.driver.execute_script(f"window.scrollTo(0, {Y})")  # Scroll down the page
             sleep(1)
             # Store the link of each image if the page contains the targeted images
@@ -178,7 +211,7 @@ class PinterestScraper:
             except: 
                 print('Some errors occurred, most likely due to no images present')
 
-    def _grab_images_src(self) -> None:
+    def _grab_images_src(self, n_scrolls=1) -> None:
         """Get src links for all images
         
         Args
@@ -190,7 +223,9 @@ class PinterestScraper:
         for category in self.selected_category.values():
             self.category = category.replace(self.root, "")
             self.category_image_count[self.category] = 0
-            self._extract_links(self.xpath_dict['links_container'], self.xpath_dict['links_element'])
+            self._extract_links(self.xpath_dict['links_container'], 
+                                self.xpath_dict['links_element'],
+                                n_scrolls)
 
     def _grab_title(self, title_element) -> None:
 
@@ -270,8 +305,21 @@ class PinterestScraper:
     def _download_image(self, src: str) -> None:
         """Download the image
         """
-        urllib.request.urlretrieve(src, 
-                                f"{self.root_save_path}/{self.category}/{self.category}_{self.counter_dict[self.category]}.jpg")
+        if self._cat_imgs_to_save[self.category]:
+            if not self.to_s3:
+                urllib.request.urlretrieve(src, 
+                f"{self.root_save_path}/{self.category}/{self.category}_{self.counter_dict[self.category]}.jpg")
+            else:
+                with tempfile.TemporaryDirectory() as tempdir:
+                    urllib.request.urlretrieve(src, 
+                    f'{tempdir}/{self.category}_{self.counter_dict[self.category]}.jpg')
+                    # print(f'{tempdir}/{self.category}_{self.counter_dict[self.category]}.jpg')
+                    sleep(0.5)
+                    self.s3_client.upload_file(
+                        f'{tempdir}/{self.category}_{self.counter_dict[self.category]}.jpg', self.s3_name, 
+                        f'pinterest/{self.category}/{self.category}_{self.counter_dict[self.category]}.jpg')
+
+                    sleep(0.5)
 
     def _grab_image_src(self) -> None:
 
@@ -414,19 +462,29 @@ class PinterestScraper:
         os.chdir('data')
         for category in self.selected_category.values():
             name = category.split('/')[4]
-            with open(f'{name}/{name}.json', 'w') as loading:
-                json.dump(self.main_dict[f"{name}"], loading)
+            if not self.to_s3:
+                with open(f'{name}/{name}.json', 'w') as loading:
+                    json.dump(self.main_dict[f"{name}"], loading)
+            else:
+                with tempfile.TemporaryDirectory() as tempdir:
+                    with open(f'{tempdir}/{name}.json', 'w') as loading:
+                        json.dump(self.main_dict[f"{name}"], loading)
+                        self.s3_client.upload_file(f'{tempdir}/{name}.json', self.s3_name, 
+                        f'pinterest/{self.category}/{name}.json')
 
     def get_category_data(self) -> None:
         """Grab all image links, then download all images
         """
         category_link_dict = self._get_category_links(self.xpath_dict['categories_container'])
+        sleep(0.75)
         self._print_options(category_link_dict)
         self._get_user_input(category_link_dict)
-        self._create_folders('../data')
-        self._grab_images_src()
+        # self._create_folders_locally('../data')
+        self._save_to_cloud_or_local()
+        self._grab_images_src(n_scrolls=10)
         self._grab_page_data()
         self._data_dump()
+        self.driver.quit()
 
     # Things that need work.
     # Find a way to combine grab_image_src for story style and regular.
