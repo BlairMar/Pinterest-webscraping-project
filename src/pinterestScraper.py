@@ -7,9 +7,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
+from tqdm import tqdm
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -44,8 +45,8 @@ class PinterestScraper:
         self.category = None
         self.category_image_count = defaultdict(int)
         self.root = root
-        # self.driver = webdriver.Chrome()
-        self.driver = webdriver.Chrome(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome()
+        # self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.image_set = set()
         self.category_link_dict = []
         self.save_path = None
@@ -438,7 +439,7 @@ class PinterestScraper:
         category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
 
 
-        for (cat, link) in list(self.link_set):
+        for (cat, link) in tqdm(list(self.link_set)):
             self.category = cat.split("/")[0]
             self.counter_dict[f"{self.category}"] += 1
             self.current_dict = {}
@@ -481,7 +482,7 @@ class PinterestScraper:
         self._get_user_input(category_link_dict)
         # self._create_folders_locally('../data')
         self._save_to_cloud_or_local()
-        self._grab_images_src(n_scrolls=10)
+        self._grab_images_src(n_scrolls=1)
         self._grab_page_data()
         self._data_dump()
         self.driver.quit()
