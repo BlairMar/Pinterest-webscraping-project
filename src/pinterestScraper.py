@@ -1,3 +1,4 @@
+from re import X
 from typing import DefaultDict
 from selenium import webdriver
 import time
@@ -11,6 +12,9 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 
+
+
+         
 """
 Class to perform webscraping on the Pinterest website.
 """
@@ -46,7 +50,7 @@ class PinterestScraper:
         
          
         
-        
+    
     def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories
         
@@ -64,9 +68,8 @@ class PinterestScraper:
         categories = self.driver.find_elements_by_xpath(categories_xpath)
         # Extract the href
         self.category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
-
         return self.category_link_dict
-
+        
     def _print_options(self, category_link_dict: dict):
         """Print all categories available on the homepage
         
@@ -77,6 +80,7 @@ class PinterestScraper:
         print(f"\n The options (Total {len(category_link_dict)})  are:")
         for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
             print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
+        return 'success'         # do this for all methods which return nothing - make them return true, then add this to the unit_test
 
     def _get_user_input(self, category_link_dict: dict):  
         """Let user decide how many and which categories to download
@@ -106,7 +110,6 @@ class PinterestScraper:
                     self.selected_category[i+1] = category_link_dict[choice]
             except:
                 raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.")
-            
         print(f"Categories selected: {self.selected_category.values()}")
 
     def _create_folders(self, directory_path: str) -> None:
@@ -127,6 +130,7 @@ class PinterestScraper:
             print(f"Category folder: {name}")
             if not os.path.exists(f'{self.root_save_path}/{name}'):
                 os.makedirs(f'{self.root_save_path}/{name}')
+        return 'success'
 
     def _extract_links(self, container_xpath: str, elements_xpath: str) -> None:
         """Move to the page of a category and extract src attribute for the images 
@@ -154,7 +158,9 @@ class PinterestScraper:
                 print(f"Number of uniques images: {len(self.image_set)}")
             except: 
                 print('Some errors occurred, most likely due to no images present')
-
+        
+        return 'success'
+    
     def _get_image_source(self, link: str) -> None:
         """Move to the image source page
 
@@ -165,7 +171,8 @@ class PinterestScraper:
         self.driver.get(link)
         sleep(0.5)
         self.src = link
-
+        return 'success'
+    
     def _download_image(self, i: int) -> None:
         """Download the image
         Args
@@ -174,7 +181,7 @@ class PinterestScraper:
         """
         urllib.request.urlretrieve(self.src, 
                                 f"{self.root_save_path}/{self.save_path}/{self.save_path}_{i}.jpg")
-
+        return 'success'
     def _grab_images_src(self, container_xpath: str, elements_xpath: str) -> None:
         """Get src links for all images
         
@@ -211,7 +218,9 @@ class PinterestScraper:
         self._grab_images_src('//div[@data-test-id="grid"]//div[@class="vbI XiG"]', 
                               '//div[@class="Yl- MIw Hb7"]//img')
         self._save_all_images()
+        
 
 if __name__ == "__main__":
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper.get_category_images()
+

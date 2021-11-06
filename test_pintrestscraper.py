@@ -1,3 +1,4 @@
+from re import X
 from selenium import webdriver
 import unittest
 
@@ -35,19 +36,23 @@ class PinterestScraperTestCase(unittest.TestCase):
         This function is used to set up the scenario for each test
         '''
             # we will be testing the scraper with these specific attributes:(ie:this instance of the class will be getting tested)
-        self.pinterest_scraper = pinterestScraper.PinterestScraper('https://www.pinterest.co.uk/ideas/') #creating an instance 
+        self.pinterest_scraper = pinterestScraper.PinterestScraper('https://www.pinterest.co.uk/ideas/') #creating an instance with inserting a root 
      
         
     def tearDown (self):
         self.pinterest_scraper.driver.close()  #after each unittest, we close the instance of the class
 
-        
+
+
+
     def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
         '''
         This funtion is used to see if a dictionary is created
         '''
         test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') # u must refer back to the exact instance of the class like here
         self.assertIsInstance(test_dict, dict) #test if output is dictionary
+
+        
         
     
     def test_get_category_links(self):
@@ -71,7 +76,7 @@ class PinterestScraperTestCase(unittest.TestCase):
          self.assertEqual(counter, 3) # add self to all asserts
 
          #see how long the function takes to run:
-         start = time.time()
+         start = time.time()     #move this to actual class
          test_href_links = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
          end = time.time()
          print (f'It had taken {end - start} seconds to run this method')
@@ -79,89 +84,122 @@ class PinterestScraperTestCase(unittest.TestCase):
 
             
 
-    #     #DONT NEED:
-    # def test_print_options(self):
-    #       '''
-    #       This function tests if the available categories are printed out
-    #       '''
-    #       category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') # this is the dictionary we will input (this func needs a dict input)
-    #       test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
-    #       print (test_available_categories) # this object is a 'Nontype'- how am i supposed to chek if the correct categories are ina  nontype?  HOW DO I MAKE THIS PRINTED OFF WORDS INTO A LIST SO I CAN CHECK IF CORRECT  WORDS ARE IN  THERE?
-          
-    #       actual_available_categories = ['halloween', 'animals', 'architecture', 'art', 'beauty', 'design', 'diy-and-crafts', 'education', 'electronics', 'event-planning', 'finance', 'food-and-drink', 'lawn-and-garden', 'home-decor', 'mens-fashion', 'quotes', 'tattoos', 'travel', 'vehicles', 'weddings', 'womens-fashion' ]
-    #       print (dict(enumerate(actual_available_categories)))
-          
-                    #.items() splits the dictionary elements into tuples
-        #   error_message = "Failed! did not collect all available categories"
-        #   self.assertIn(enumerate(actual_available_categories), test_available_categories, error_message) 
         
-    # #doesnt work 
-    # @given(st.dictionaries)    # Want to solely test which inputs can be used with this function          
-    # def test_get_user_input(self):
-    #     '''
-    #      This function tests if the user's inputs can be inputted successfully
-    #     '''
-    #     pass
+    def test_print_options(self):
+          '''
+          This function tests if the entire method is run
+          '''
+          
+          
+          category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') #using output of last func for input of this function
+          test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
+          print (test_available_categories) 
+          self.assertEqual('success', test_available_categories) # ascertains that the entire function actually ran
+  
+    
+    def test_create_folders(self): 
+        '''
+        This function is used to test if the entire method is run
+        '''
+        self.selected_category  = {}  #i think we need selected_category to be the catgeories selcted in the previous method (get_user_input)
+        test_folders = pinterestScraper.PinterestScraper._create_folders(self, directory_path='/Users/danielzakaiem/Documents/')
+        self.assertEqual('success', test_folders)
+        
 
 
-    
-    
-    
+    #doesnt work
     # def test_create_folders(self): 
     #     '''
     #     This function is used to test if folders can be opneded after created
     #     '''
-    #     self.selected_category  = {}  #i think we need selected_category to be the catgeories selcted in the previous method (get_user_input)
+    #     selected_category  = ('https://www.pinterest.co.uk/ideas/halloween/915794205972/', 'https://www.pinterest.co.uk/ideas/holidays/910319220330/')  #lets say we selected 2 categories: 1 and 2
     #     test_folders = pinterestScraper.PinterestScraper._create_folders(self, directory_path='/Users/danielzakaiem/Documents/')
     #      #??- this should create folders?
        
-    #     testing = 0
+    #     counter = 0      
+        
     #     if os.path.isfile(test_folders):
-    #          print('File exists')
-    #          testing += 1
+    #         print('File exists')
+    #         counter += 1
     #     else:
     #          print ('File does not exist')
     #     self.assertEqual(testing, 1) # asserts if file exists
-
+    #       #see how long the function takes to run:
+    #     start = time.time()
+    #     self.pinterest_scraper._create_folders(directory_path='/Users/danielzakaiem/Documents/')
+    #     end = time.time()
+    #     print (f'It had taken {end - start} seconds to run this method')
 
         
         
 
-#     @given(st.text())
-#     def test_extract_links(self, container_xpath, elements_xpath):
-#         '''
-#         This function is used to test if correct src links are extracted
-#         '''
-#         actual_links = pinterestScraper.PinterestScraper._extract_links
-#         test_links = [#grab 3 diffferent ones from the acc page]
-#     pass
+    #  #doesnt work?
+    # def test_extract_links(self):    
+    #     '''
+    #     This function is used to test if the entire method is run
+    #     '''
+        
+                           
+    #     extracted_links = self.pinterest_scraper._extract_links(container_xpath='//*[@id="mweb-unauth-container"]/div/div', elements_xpath = '//*[@id="mweb-unauth-container"]/div/div/div[8]/div') # lets say we picked category 1(hallowean). container xpath = xpath of all containers on hallowean page. elements x path = popular ideas container
+    #     self.assertEqual('success', extracted_links)
+        
+#doesnt work
+    # def test_extract_links(self, container_xpath, elements_xpath):    #when importing this class, does it 'import' variables defined within the class? i dont think so no
+    #     '''
+    #     This function is used to test if correct src links are extracted
+    #     '''
+    #     extracted_links = self.pinterest_scraper._extract_links(container_xpath='//*[@id="mweb-unauth-container"]/div/div', elements_xpath = '//*[@id="mweb-unauth-container"]/div/div/div[8]/div')
+        
+    #     #handpicked for halloween
+    #     handpicked_src_1 = self.driver.find_element_by_xpath('//*[@id="mweb-unauth-container"]/div/div/div[8]/div/div[2]/div/div/div[2]/div/div/div/div[1]/div[7]/div/div/div/div[1]/a/div/div/div/div/div[1]/img'.get_attribute('src')
+    #     handpicked_src_2 = self.driver.find_element_by_xpath('//*[@id="mweb-unauth-container"]/div/div/div[8]/div/div[2]/div/div/div[2]/div/div/div/div[1]/div[10]/div/div/div/div[1]/a/div/div/div/div/div[1]/img').get_attribute('src')
+        
+
+
     
-#     @given(st.text())
-#     def test_get_image_source(self, link):
-#         '''
-#         This function is used to test if the correct image source is retreived
-#         '''
-#         actual_image_source = pinterestScraper.PinterestScraper._get_image_source # need to see wether 'pressing on the src link actually brings us to the root image"
-#         response = requests.head(random.choice(actual_image_source))
-#         print response.headers.get('content-type')
-#         pass
+    # #doesnt work
+    # def test_get_image_source(self):
+    #     '''
+    #     This function is used to test if the entire run
+    #     '''
+    #     image_source = pinterestScraper.PinterestScraper._get_image_source('//*[@id="mweb-unauth-container"]/div/div/div/div[2]/div/div/div/div/div[1]/div/div/div/div/div/div/div/img') # random hallowean photo, pressed on it and copied the xpath with src link in it
+    #     self.assertEqual (image_source, 'success')                            #WHAT SHOULD THE 'LINK' ACTALLY BE? ITS NOT WORKING
+    # #'//*[@id="mweb-unauth-container"]/div/div/div/div[2]/div/div/div/div/div[1]/div/div/div/div/div/div/div/img'
+    # # https://i.pinimg.com/originals/42/d3/e9/42d3e9b8104d429bfcc2653b42290d1f.jpg  
     
-#     @given(st.text())
-#     def test_download_image(self, i):
+    
+#
+    
+#    #doesnt work
+#     def test_download_image(self):
 #         '''
-#         This funciton is used to test if the images are downloaded properly
+#         This funciton is used to test if the entire method is run 
 #         '''    
-#         pass
+        
+#         src = 'https://i.pinimg.com/originals/42/d3/e9/42d3e9b8104d429bfcc2653b42290d1f.jpg' # the func needed an src to run
+#         downloaded_images =self.pinterest_scraper._download_image(2)
+#         self.assertEqual(downloaded_images, 'success')
     
+    #doesnt work
+    # @given(st.text())
+    # def test_download_image(self, i):
+    #     '''
+    #     This funciton is used to test if the images are downloaded properly
+    #     '''    
+    #     pass
+    
+    #doesnt work
 #     @given
 #     def test_grab_image_srcs(self, container_xpath):
 #         pass
 
+
+#doesnt work
 #     @given
 #     def test_save_all_images(self):
 #         pass
 
-
+#doesnt work
 #     @given(st.text())
 #     def test_get_category_images(self):
 #         ''''
@@ -169,5 +207,8 @@ class PinterestScraperTestCase(unittest.TestCase):
 #         '''
 #         pass
     
+
+
+
 if __name__ == "__main__":
-    unittest.main(argv= [''],verbosity=2,exit =False)  # ' run all of the unittests we have defined
+    unittest.main(argv= [''],verbosity=2,exit =False)   #"run all of the unittests we have defined"
