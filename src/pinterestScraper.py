@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 from tqdm import tqdm
@@ -45,8 +45,8 @@ class PinterestScraper:
         self.category = None
         self.category_image_count = defaultdict(int)
         self.root = root
-        self.driver = webdriver.Chrome()
-        # self.driver = webdriver.Chrome(ChromeDriverManager().install())
+        # self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.image_set = set()
         self.category_link_dict = []
         self.save_path = None
@@ -480,7 +480,7 @@ class PinterestScraper:
                     with open(f'{tempdir}/{name}.json', 'w') as loading:
                         json.dump(self.main_dict[f"{name}"], loading, indent=4)
                         self.s3_client.upload_file(f'{tempdir}/{name}.json', self.s3_name, 
-                        f'pinterest/{self.category}/{name}.json')
+                        f'pinterest/{name}/{name}.json')
 
     def _create_log(self) -> None:
 
