@@ -51,6 +51,9 @@ class PinterestScraper:
         self.category_link_dict = []
         self.save_path = None
         self.link_set = set()
+        self.log = set()
+        self.fresh_set = set()
+        self.current_run_categories = []
         self.current_dict = {}
         self.main_dict = {}
         self.counter_dict = {} # A counter dict to order the data we grab from each page.
@@ -149,9 +152,17 @@ class PinterestScraper:
 
     def _save_to_cloud_or_local(self):
         for category in self.selected_category.values():
+            # if category.json exists main_dict[category] = json.loads(category.json)
             name = category.split('/')[4]
-            self.main_dict[f"{name}"] = {}
+            self.current_run_categories.append(name)
             self.counter_dict[f"{name}"] = 0
+            if os.path.exists(f'../data/{name}/{name}.json'):
+                with open(f'../data/{name}/{name}.json', 'r') as load:
+                    contents = json.load(load)
+                    # (f'../data/{name}/{name}.json')
+                    self.main_dict[f"{name}"] = contents
+            else: 
+                self.main_dict[f"{name}"] = {}
         choice = input('\nDo you wish to save the data on AWS S3 (y) or locally (n)? [y/n]: ')
         if choice == 'y':
             self.to_s3 = True
@@ -433,13 +444,11 @@ class PinterestScraper:
             
             Returns: None '''
 
-        # Need to make several sub dicts:
-        # Need to append current dict to relevant sub dict.
-
         category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
 
+        self.fresh_set = self.link_set.difference(self.log)
 
-        for (cat, link) in tqdm(list(self.link_set)):
+        for (cat, link) in tqdm(list(self.fresh_set)):
             self.category = cat.split("/")[0]
             self.counter_dict[f"{self.category}"] += 1
             self.current_dict = {}
@@ -469,9 +478,45 @@ class PinterestScraper:
             else:
                 with tempfile.TemporaryDirectory() as tempdir:
                     with open(f'{tempdir}/{name}.json', 'w') as loading:
-                        json.dump(self.main_dict[f"{name}"], loading)
+                        json.dump(self.main_dict[f"{name}"], loading, indent=4)
                         self.s3_client.upload_file(f'{tempdir}/{name}.json', self.s3_name, 
                         f'pinterest/{self.category}/{name}.json')
+
+    def _create_log(self) -> None:
+
+        ''' Defines a function which creates a log of pages visited as to not repeat 
+            
+            Arguments: None
+            
+            Returns: None '''
+
+        with open('../data/log.json', 'w') as log:
+            json.dump(list(self.link_set), log, indent=4)
+
+    def _check_log(self) -> None:
+
+        ''' Defines a function which checks if there is a log of visited links. If there is, it sets
+            self.link_set and self.log equal to the log set.
+            
+            Arguments: None
+            
+            Returns: None '''
+
+
+        if os.path.exists('../data/log.json'):
+            with open('../data/log.json', 'r') as load:
+                contents = json.load(load)
+                tuples_content = [(item[0], item[1]) for item in contents]
+                self.link_set = set(tuples_content)
+                self.log = set(tuples_content)
+                for cat, href in tuples_content:
+                    category = cat.split('/')[0]
+                    if category in self.current_run_categories:
+                        self.counter_dict[category] += 1
+                    else:
+                        pass
+        else:
+            pass
 
     def get_category_data(self) -> None:
         """Grab all image links, then download all images
@@ -482,15 +527,37 @@ class PinterestScraper:
         self._get_user_input(category_link_dict)
         # self._create_folders_locally('../data')
         self._save_to_cloud_or_local()
+        self._check_log()
         self._grab_images_src(n_scrolls=1)
         self._grab_page_data()
         self._data_dump()
+        self._create_log()
         self.driver.quit()
-
-    # Things that need work.
-    # Find a way to combine grab_image_src for story style and regular.
-    # Grab embedded youtube vids.
 
 if __name__ == "__main__":
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper.get_category_data()
+
+    ''' Things to implement:
+    
+        - Ask how many images from each category you want to get for each category
+            - If self.link_set exists then ask how many new pictures.
+            - Needs to be interlinked with the scroll function.
+        - Implement a checkpoint system:
+            - Save the self.link_set to a file in data folder.
+            - If file exists then self.link_set = file set.
+            - Will be an issue if you haven't downloaded images before and then want to as
+              the html will be in the checkpoint file. Can download from src in dict if wanting
+              images later.
+            - Do I put this in the init or later? 
+            - Will go hand in hand with how many images function.
+
+        - Need to append to end of log rather than rewrite it as we will rewrite with only new pieces,
+          not all the old ones.
+            - If thing.json exists, main_dict[thing] = thing.json
+
+        '''
+
+        # Things that need work.
+        # Find a way to combine grab_image_src for story style and regular.
+        # Grab embedded youtube vids.
