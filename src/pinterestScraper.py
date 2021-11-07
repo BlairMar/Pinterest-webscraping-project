@@ -150,6 +150,46 @@ class PinterestScraper:
         else:
             raise Exception("Invalid input.")
 
+    def _get_remote_data_save(self) -> None:
+
+        ''' Defines a function which asks if the user has a remote set of data they wish to update
+            rather than regrab everything in chosen categories. 
+            
+            Arguments: None
+            
+            Returns: None '''
+
+        update = ''
+
+        while update != 'N' and update != 'Y':
+            update = input('Do you have a cloud based set of data/imgs you would like to continue from? Y or N: ').upper()
+            if update != 'N' or update != 'Y':
+                print('Please enter Y or N: ')
+            elif update == 'N':
+                print('Remote data continuation not selected, if local files detected will continue from these file. ')
+                self.remote_continuation = False
+            elif update == 'Y':
+                check = ''
+                while check != 'N' and check != 'Y':
+                    check = input('Are you sure you want to continue from your remote files? Y or N: ').upper()
+                    if check != 'N' or check != 'Y':
+                        print('Please enter Y or N: ')
+                    elif check == 'N':
+                        update = ''
+                        print('Please reselect your answer. ')
+                    elif check == 'Y':
+                        self.remote_continuation = True
+                        print('You have chosen to continue from your previous cloud data. ')
+                    else:
+                        print('Remote data continuation Error 2. ')
+            else:
+                print('Remote data continuation Error 1. ')
+
+        if self.remote_continuation == True:
+            self.remote_data = input('Please enter the name of your remote s3 bucket: ')
+        else:
+            pass
+
     def _save_to_cloud_or_local(self):
         for category in self.selected_category.values():
             # if category.json exists main_dict[category] = json.loads(category.json)
@@ -173,7 +213,6 @@ class PinterestScraper:
             self._create_folders_locally('../data')
         else:
             raise Exception("Invalid input")
-
 
     def _create_folders_locally(self, directory_path: str) -> None:
         """Create corresponding folders to store images of each category
@@ -556,8 +595,21 @@ if __name__ == "__main__":
           not all the old ones.
             - If thing.json exists, main_dict[thing] = thing.json
 
+        - There will be an issue with the log system regarding s3. 
+            - The log system requires a name.json to update the main dict before appending to it.
+            - If the previous name.json is saved to the s3 and not locally cannot update.
+            - Even if we could update, if they uploaded to s3 first and then wanted to save locally
+              there would be an issue as we no longer enter the s3 bucket name to grab data from it.
+            - Could just implement a new input method where they ask if you have remotely saved data.
+
         '''
 
         # Things that need work.
         # Find a way to combine grab_image_src for story style and regular.
         # Grab embedded youtube vids.
+
+
+    ''' We have self.remote_continution = True and self.remote_data 
+            - Maybe I can incorporate self.remote_data path into check_log
+            - What do we do when there is one file more update in local and one more update in s3?
+            '''
