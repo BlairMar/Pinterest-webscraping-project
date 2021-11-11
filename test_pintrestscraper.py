@@ -1,6 +1,5 @@
-from re import X
-from selenium import webdriver
-import unittest
+
+# from selenium import webdriver
 
 from webdriver_manager import driver
 from src import pinterestScraper
@@ -12,7 +11,7 @@ import requests
 from collections import defaultdict
 import os.path
 import time
-
+import unittest
 
 
 #ADD TIMEIT TESTS TO SEE HOW LONG EACH METHOD TAKES - PUT IN TEST_CLASS AT START OF EACH METHOD 'IT TOOK .. TO RUN..'
@@ -49,7 +48,7 @@ class PinterestScraperTestCase(unittest.TestCase):
         '''
         This funtion is used to see if a dictionary is created
         '''
-        test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') # u must refer back to the exact instance of the class like here
+        test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') 
         self.assertIsInstance(test_dict, dict) #test if output is dictionary
 
         
@@ -97,12 +96,12 @@ class PinterestScraperTestCase(unittest.TestCase):
           self.assertEqual('success', test_available_categories) # ascertains that the entire function actually ran
   
     
-    def test_create_folders(self): 
+    def test_create_folders_locally(self): 
         '''
         This function is used to test if the entire method is run
         '''
         self.selected_category  = {}  #i think we need selected_category to be the catgeories selcted in the previous method (get_user_input)
-        test_folders = pinterestScraper.PinterestScraper._create_folders(self, directory_path='/Users/danielzakaiem/Documents/')
+        test_folders = pinterestScraper.PinterestScraper._create_folders_locally(self, directory_path='/Users/danielzakaiem/Documents/')
         self.assertEqual('success', test_folders)
         
 
