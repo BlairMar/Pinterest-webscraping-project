@@ -316,8 +316,7 @@ class PinterestScraper:
                         for save in saves:
                             if recent_saves[save] == 'local':
                                 with open(f'../data/{save}/{save}.json', 'r') as load:
-                                    contents = json.load(load)
-                                    self.main_dict[f'{save}'] = contents
+                                    self.main_dict[f'{save}'] = json.load(load)
                             elif recent_saves[save][0] == 'remote':
                                 s3_save = recent_saves[save][1]
                                 obj = self.s3_client.get_object(
@@ -331,6 +330,8 @@ class PinterestScraper:
                         print('\nExisting data will be overwritten if you are saving in the same directory as your last save. ')
                     else:
                         print('\nPlease re-enter your input. ')
+            else:
+                print("Previous saves detected: None relate to this data collection run. ")
 
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
         """Move to the page of a category and extract src attribute for the images 
@@ -628,7 +629,12 @@ class PinterestScraper:
             
             Returns: None '''
         
-        self.recent_save_dict = {}
+        # if dict exists json.load
+        if os.path.exists('../data/recent-save-log.json'):
+            with open('../data/recent-save-log.json', 'r') as load:
+                self.recent_save_dict = json.load(load)
+        else:
+            self.recent_save_dict = {}
 
         for category in self.selected_category_names:
             if category in self.s3_list:
