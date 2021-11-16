@@ -11,6 +11,7 @@ import json
 import tempfile
 import boto3 
 from tqdm import tqdm
+import shutil
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -317,6 +318,7 @@ class PinterestScraper:
                             if recent_saves[save] == 'local':
                                 with open(f'../data/{save}/{save}.json', 'r') as load:
                                     self.main_dict[f'{save}'] = json.load(load)
+                                shutil.rmtree(f'../data/{save}')
                             elif recent_saves[save][0] == 'remote':
                                 s3_save = recent_saves[save][1]
                                 obj = self.s3_client.get_object(
@@ -324,12 +326,25 @@ class PinterestScraper:
                                     Key = (f'pinterest/{save}/{save}.json')
                                 ) 
                                 self.main_dict[f'{save}'] = json.loads(obj['Body'].read())
+                                s3 = boto3.resource('s3')
+                                bucket = s3.Bucket(s3_save)
+                                bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
                             else: 
                                 print('\nSomething fishy going on with the save_log. ')
                     elif fresh == 'N':
                         tuples_content = [item for item in tuples_content if item[0].split('/')[0] not in saves]
                         self.link_set = set(tuples_content)
                         self.log = set(tuples_content)
+                        for save in saves:
+                            if recent_saves[save] == 'local':
+                                shutil.rmtree(f'../data/{save}')
+                            elif recent_saves[save][0] == 'remote':
+                                s3_save = recent_saves[save][1]
+                                s3 = boto3.resource('s3')
+                                bucket = s3.Bucket(s3_save)
+                                bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
+                            else: 
+                                print('\nSomething fishy going on with the save_log. Embedded ')
                         print('\nExisting data will be overwritten if you are saving in the same directory as your last save. ')
                     else:
                         self.link_set = set(tuples_content)
