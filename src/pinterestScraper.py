@@ -297,6 +297,9 @@ class PinterestScraper:
             with open('../data/recent-save-log.json', 'r') as load:
                 recent_saves = json.load(load)
             saves = [key for key in recent_saves if key in self.selected_category_names]
+            with open('../data/log.json', 'r') as load:
+                contents = json.load(load)
+                tuples_content = [(item[0], item[1]) for item in contents]
             if saves:
                 print(f'\nWe have detected saved data for the follow categories: {saves}. ')
                 # data_loc = [recent_saves[key] for key in saves]
@@ -304,15 +307,12 @@ class PinterestScraper:
                 while fresh != 'Y' and fresh != 'N':
                     fresh = input('\nWould you like to add to your existing data? Y or N: ').upper()
                     if fresh == 'Y':
-                        with open('../data/log.json', 'r') as load:
-                            contents = json.load(load)
-                            tuples_content = [(item[0], item[1]) for item in contents]
-                            self.link_set = set(tuples_content)
-                            self.log = set(tuples_content)
-                            for cat, href in tuples_content:
-                                category = cat.split('/')[0]
-                                if category in self.selected_category_names:
-                                    self.counter_dict[category] += 1
+                        self.link_set = set(tuples_content)
+                        self.log = set(tuples_content)
+                        for cat, href in tuples_content:
+                            category = cat.split('/')[0]
+                            if category in self.selected_category_names:
+                                self.counter_dict[category] += 1
                         for save in saves:
                             if recent_saves[save] == 'local':
                                 with open(f'../data/{save}/{save}.json', 'r') as load:
@@ -327,10 +327,16 @@ class PinterestScraper:
                             else: 
                                 print('\nSomething fishy going on with the save_log. ')
                     elif fresh == 'N':
+                        tuples_content = [item for item in tuples_content if item[0].split('/')[0] not in saves]
+                        self.link_set = set(tuples_content)
+                        self.log = set(tuples_content)
                         print('\nExisting data will be overwritten if you are saving in the same directory as your last save. ')
                     else:
+                        self.link_set = set(tuples_content)
                         print('\nPlease re-enter your input. ')
             else:
+                self.link_set = set(tuples_content)
+                self.log = set(tuples_content)
                 print("Previous saves detected: None relate to this data collection run. ")
 
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
