@@ -7,9 +7,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
+from tqdm import tqdm
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -44,12 +45,16 @@ class PinterestScraper:
         self.category = None
         self.category_image_count = defaultdict(int)
         self.root = root
-        # self.driver = webdriver.Chrome()
-        self.driver = webdriver.Chrome(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome()
+        # self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.image_set = set()
         self.category_link_dict = []
         self.save_path = None
         self.link_set = set()
+        self.log = set()
+        self.fresh_set = set()
+        self.s3_list = []
+        # self.current_run_categories = [] made redundant by self.selected_category_names
         self.current_dict = {}
         self.main_dict = {}
         self.counter_dict = {} # A counter dict to order the data we grab from each page.
@@ -70,7 +75,7 @@ class PinterestScraper:
             'desc_element': './/span[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]',
             'links_container': '//div[@data-test-id="grid"]//div[@class="vbI XiG"]',
             'links_element': './/div[@class="Yl- MIw Hb7"]/div/div/div/div[1]/a',
-            'categories_container': '//div[@data-test-id="interestRepContainer"]//a'
+            'categories_container': '//div[@data-test-id="interestRepContainer"]'
         }
 
     def _get_category_links(self, categories_xpath: str) -> dict:
@@ -85,9 +90,11 @@ class PinterestScraper:
         dict: dictionary containing the href of each category
         """
         self.driver.get(self.root)
-        sleep(2)
         # Get the a list of all the categories
-        categories = self.driver.find_elements_by_xpath(categories_xpath)
+        container = WebDriverWait(self.driver, 2).until(
+                EC.presence_of_element_located((By.XPATH, categories_xpath))
+            )
+        categories = container.find_elements_by_xpath('.//a')
         # Extract the href
         self.category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
 
@@ -104,6 +111,39 @@ class PinterestScraper:
         for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
             print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
 
+    def _catgories_to_save_imgs(self) -> None:
+
+        get_all = ''
+        while get_all != 'N' and get_all != 'Y':
+            get_all = input('\nWould you like to download images for all selected categories? Y or N: ').upper()
+            if get_all == 'Y':
+                for cat_name in self.selected_category_names:
+                    self._cat_imgs_to_save[cat_name] = True
+            elif get_all == 'N':
+                get_some = ''
+                while get_some != 'N' and get_some != 'Y':
+                    get_some = input('\nWould you like to download images for some of the selected categories? Y or N: ').upper()
+                    if get_some == 'Y': 
+                        for cat_name in self.selected_category_names:
+                            to_save = ''
+                            while to_save != 'Y' and to_save != 'N':
+                                to_save = input(f'\nDo you wish to save the images for {cat_name}? [Y/N]: ').upper()
+                                if to_save == 'Y':
+                                    self._cat_imgs_to_save[cat_name] = True
+                                elif to_save == 'N':
+                                    self._cat_imgs_to_save[cat_name] = False
+                                else:
+                                    print('\nPlease retry your input. ')
+                    elif get_some == 'N':
+                        print('\nNo images will be downloaded. ')
+                        for cat_name in self.selected_category_names:
+                            self._cat_imgs_to_save[cat_name] = False
+                    else:
+                        print('\nUnrecognised input, please retry.')
+            else:
+                print('\nPlease re-enter your answer. ')
+
+
     def _get_user_input(self, category_link_dict: dict):  
         """Let user decide how many and which categories to download
         
@@ -112,77 +152,185 @@ class PinterestScraper:
         category_link_dict: dict
         """
         try:    
-            categories_num = int(input(f"\nFrom how many categories do you want to download images?: \n"))
+            categories_num = int(input(f"\nHow many categories of images do you wish to grab? 1 to {len(category_link_dict)}: \n"))
             assert categories_num <= len(category_link_dict)
         except:  
-            raise Exception(f"Input cannot be greater than {len(category_link_dict)}.") 
+            raise Exception(f"\nInput cannot be greater than {len(category_link_dict)}.") 
         pass
 
-        print(categories_num)
         self.selected_category = {}
+
         if categories_num == len(category_link_dict):
             self.selected_category = category_link_dict
         else:
-            print("\nWhich one(s) [Pick number(s)]?: ")
-            selected_category = []
             try:
-                for i in range(categories_num):
-                    choice = int(input(f"{categories_num - i} choices left: "))
-                    assert choice < len(category_link_dict)
-                    self.selected_category[i+1] = category_link_dict[choice]
-                    self._catgories_to_save_imgs(category_link_dict[choice])
+                choices = []
+                check_list = [str(x+1) for x in range(len(category_link_dict))]
+                while len(choices) != categories_num:
+                    choices = input(f"\nPlease select your desired categories. Separate your choices by commas: You have {categories_num} choice(s) to make. ")
+                    choices = (choices.replace(' ', '')).split(',')
+                    print(choices)
+                    for choice in choices:
+                        if choice not in check_list:
+                            choices = []
+                            print(f'\nPlease only enter integers in a comma separated list. Values between 1 and {len(category_link_dict)}. ') 
+                            break
+                    if len(choices) == 0:
+                        continue
+                    elif len(choices) != categories_num:
+                        print('\nPlease only select the predetermined number of choices. ')
+                    elif len(set(choices)) != len(choices):
+                        print('\nOnly unique categories accepted. ')
+                        choices = []
+                    elif len(set(choices)) == len(choices) == categories_num:
+                        for i, choice in enumerate(choices):
+                            choice = int(choice)
+                            self.selected_category[i+1] = category_link_dict[choice]
+                    else: 
+                        print('\nUnknown choice error')            
             except:
-                raise Exception(f"Input cannot be greater than {len(self.category_link_dict)}.")
+                raise Exception(f"\nChoice error 2")
+
+        self.selected_category_names = [category.split('/')[4] for category in self.selected_category.values()]
+        print(f"Categories selected: {self.selected_category_names}")
+
+    def _interior_cloud_save_loop(self, remote) -> None or str:
+
+        ''' Defines the interior loop of the cloud save function. Would all have been in one function but I needed to repeat
+            this section of code if the user made an error entering their bucket name. 
             
-        print(f"Categories selected: {self.selected_category.values()}")
+            Arguments: remote 
+            
+            Returns: "retry" if user made a mistake when entering their bucket name
+                      None at all other times '''
 
-    def _catgories_to_save_imgs(self, category):
-        to_save = input('\nDo you wish to save the images? [y/n]: ')
-        cat_name = category.split('/')[4]
-        if to_save == 'y':
-            self._cat_imgs_to_save[cat_name] = True
-        elif to_save == 'n':
-            self._cat_imgs_to_save[cat_name] = False
+        if remote == 'Y':
+            # self.to_s3 = True
+            self.s3_name = input('\nPlease enter the name of your desired S3 bucket. ')
+            go_on = ''
+            while go_on != 'Y' and go_on != 'N':
+                go_on = input(f'\nYou have enetered {self.s3_name} as your s3 bucket. Is this correct? Y or N: ').upper()
+                if go_on == 'Y':
+                    all_or_some = ''
+                    while all_or_some != 'N' and all_or_some != 'Y':
+                        all_or_some = input('\nWould you like to download everything to this bucket? Y or N: ').upper()
+                        if all_or_some == 'Y':
+                            print('\nAll data will be stored on your s3 bucket. ')
+                            self.s3_list = self.selected_category_names
+                        elif all_or_some == 'N':
+                            print('\nPlease select which of the categories you wish to download to your bucket. ')
+                            for cat_name in self.selected_category_names:
+                                choice = ''
+                                while choice != 'N' and choice != 'Y':
+                                    choice = input(f'\nWould you like to download {cat_name} to your bucket? Y or N: ').upper()
+                                    if choice == 'Y':
+                                        self.s3_list.append(cat_name)
+                                        print(f'\n{cat_name} will be downloaded remotely. ')
+                                    elif choice == 'N':
+                                        print(f'\n{cat_name} will be stored locally. ')
+                                    else:
+                                        print('\nUnsupported selection, please choose again. ')
+                        else:
+                           print('\nUnrecognized input, please select again. ')
+                elif go_on == 'N':
+                    print('\nPlease re-enter the name of your bucket. ')
+                    return 'retry'
+        elif remote == 'N':
+            # self.to_s3 == False
+            print('\nAll data will be stored on your local machine. ')
         else:
-            raise Exception("Invalid input.")
+            print('\nYour selection was not valid, please choose again. ')
 
-    def _save_to_cloud_or_local(self):
-        for category in self.selected_category.values():
-            name = category.split('/')[4]
-            self.main_dict[f"{name}"] = {}
-            self.counter_dict[f"{name}"] = 0
-        choice = input('\nDo you wish to save the data on AWS S3 (y) or locally (n)? [y/n]: ')
-        if choice == 'y':
-            self.to_s3 = True
-            self.s3_name = input('Name of S3 bucket: ')
-            print(self.s3_name, type(self.s3_name))
-        elif choice == 'n':
-            self.to_s3 = False
-            self._create_folders_locally('../data')
-        else:
-            raise Exception("Invalid input")
+    def _save_to_cloud_or_local(self) -> None:
 
+        remote = ''
+        while remote != 'N' and remote != 'Y':
+            if remote == '':
+                remote = input('\nWould you like to save any of your data/images to a remote bucket? Y or N: ').upper()
+                remote = self._interior_cloud_save_loop(remote)
+                if remote == None:
+                    break
+            elif remote == 'retry':
+                remote = 'Y'
+                remote = self._interior_cloud_save_loop(remote)
+                if remote == None:
+                    break
+            else:
+                print('\nLoop structure error. Luke you stupid...')
 
-    def _create_folders_locally(self, directory_path: str) -> None:
-        """Create corresponding folders to store images of each category
-        Args
-        ---------------------
-        directory_path: str
-        """
+    def _initialise_counter_and_local_folders(self, directory_path) -> None:
+
+        ''' Defines a function which initialises the counter dict with the categories selected for the current run and folders for
+            local saves. 
+            
+            Arguments: directory_path: str 
+            
+            Returns: None '''
+
         self.root_save_path = directory_path
 
-        # Create a folder named data to store a folder for each category
-        if not os.path.exists(f'{self.root_save_path}'):
+        for category in self.selected_category_names:
+            self.counter_dict[f'{category}'] = 0
+            # Create a folder named data to store a folder for each category
+            if not os.path.exists(f'{self.root_save_path}'):
                 os.makedirs(f'{self.root_save_path}')
+            self.main_dict[f"{category}"] = {}
+            if category not in self.s3_list:
+                if not os.path.exists(f'{self.root_save_path}/{category}'):
+                    print(f"\nCreating local folder : {category}")
+                    os.makedirs(f'{self.root_save_path}/{category}')
 
-        # Create the category folders if they do not already exist
-        for category in self.selected_category.values():
-            name = category.split('/')[4]
-            # self.main_dict[f"{name}"] = {}
-            # self.counter_dict[f"{name}"] = 0
-            print(f"Category folder: {name}")
-            if not os.path.exists(f'{self.root_save_path}/{name}'):
-                os.makedirs(f'{self.root_save_path}/{name}')
+    def _check_for_logs(self) -> None:
+
+        ''' Defines a function which checks to see where/if there is previous data from which to 
+            continue. This would need to read from log.json and recent_saves.json '''
+
+        ''' Something about current list of categories selected
+            if any of the categories already have a save point in save log file.
+        
+            Something about how the save log is appeneded to '''
+
+        if os.path.exists('../data/recent-save-log.json'):
+            #[if x in current_cat_list? for x in recent_save.values()]
+            # if recent_save.values()
+            # current_cat_list 
+            with open('../data/recent-save-log.json', 'r') as load:
+                recent_saves = json.load(load)
+            saves = [key for key in recent_saves if key in self.selected_category_names]
+            if saves:
+                print(f'\nWe have detected saved data for the follow categories: {saves}. ')
+                # data_loc = [recent_saves[key] for key in saves]
+                fresh = ''
+                while fresh != 'Y' and fresh != 'N':
+                    fresh = input('\nWould you like to add to your existing data? Y or N: ').upper()
+                    if fresh == 'Y':
+                        with open('../data/log.json', 'r') as load:
+                            contents = json.load(load)
+                            tuples_content = [(item[0], item[1]) for item in contents]
+                            self.link_set = set(tuples_content)
+                            self.log = set(tuples_content)
+                            for cat, href in tuples_content:
+                                category = cat.split('/')[0]
+                                if category in self.selected_category_names:
+                                    self.counter_dict[category] += 1
+                        for save in saves:
+                            if recent_saves[save] == 'local':
+                                with open(f'../data/{save}/{save}.json', 'r') as load:
+                                    contents = json.load(load)
+                                    self.main_dict[f'{save}'] = contents
+                            elif recent_saves[save][0] == 'remote':
+                                s3_save = recent_saves[save][1]
+                                obj = self.s3_client.get_object(
+                                    Bucket = s3_save,
+                                    Key = (f'pinterest/{save}/{save}.json')
+                                ) 
+                                self.main_dict[f'{save}'] = json.loads(obj['Body'].read())
+                            else: 
+                                print('\nSomething fishy going on with the save_log. ')
+                    elif fresh == 'N':
+                        print('\nExisting data will be overwritten if you are saving in the same directory as your last save. ')
+                    else:
+                        print('\nPlease re-enter your input. ')
 
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
         """Move to the page of a category and extract src attribute for the images 
@@ -205,11 +353,11 @@ class PinterestScraper:
             try:
                 container = self.driver.find_element_by_xpath(container_xpath)
                 link_list = container.find_elements_by_xpath(elements_xpath)
-                print(f"Number of images successfully extracted: {len(link_list)}")
+                print(f"\nNumber of images successfully extracted: {len(link_list)}")
                 self.link_set.update([(self.category, link.get_attribute('href')) for link in link_list])
-                print(f"Number of uniques images: {len(self.link_set)}")
+                print(f"\nNumber of uniques images: {len(self.link_set)}")
             except: 
-                print('Some errors occurred, most likely due to no images present')
+                print('\nSome errors occurred, most likely due to no images present')
 
     def _grab_images_src(self, n_scrolls=1) -> None:
         """Get src links for all images
@@ -306,7 +454,7 @@ class PinterestScraper:
         """Download the image
         """
         if self._cat_imgs_to_save[self.category]:
-            if not self.to_s3:
+            if self.category not in self.s3_list:
                 urllib.request.urlretrieve(src, 
                 f"{self.root_save_path}/{self.category}/{self.category}_{self.counter_dict[self.category]}.jpg")
             else:
@@ -347,7 +495,7 @@ class PinterestScraper:
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
         except:
             self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when trying to grab img src.'
-            print('Image grab Error. Possible embedded video (youtube).')
+            print('\nImage grab Error. Possible embedded video (youtube).')
 
     # Need to look into fixing embedded youtube videos.
 
@@ -383,7 +531,7 @@ class PinterestScraper:
                 self._download_image(self.current_dict["img_src"])
         except:
             self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
-            print('Story image grab error')
+            print('\nStory image grab error')
 
     def _grab_all_users_and_counts(self) -> None:
 
@@ -432,13 +580,11 @@ class PinterestScraper:
             
             Returns: None '''
 
-        # Need to make several sub dicts:
-        # Need to append current dict to relevant sub dict.
+        # category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
 
-        category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+        self.fresh_set = self.link_set.difference(self.log)
 
-
-        for (cat, link) in list(self.link_set):
+        for (cat, link) in tqdm(list(self.fresh_set)):
             self.category = cat.split("/")[0]
             self.counter_dict[f"{self.category}"] += 1
             self.current_dict = {}
@@ -460,17 +606,40 @@ class PinterestScraper:
             os.mkdir('../data')
         os.chdir('..')
         os.chdir('data')
-        for category in self.selected_category.values():
-            name = category.split('/')[4]
-            if not self.to_s3:
+        for name in self.selected_category_names:
+            if name not in self.s3_list:
                 with open(f'{name}/{name}.json', 'w') as loading:
                     json.dump(self.main_dict[f"{name}"], loading)
             else:
-                with tempfile.TemporaryDirectory() as tempdir:
-                    with open(f'{tempdir}/{name}.json', 'w') as loading:
-                        json.dump(self.main_dict[f"{name}"], loading)
-                        self.s3_client.upload_file(f'{tempdir}/{name}.json', self.s3_name, 
-                        f'pinterest/{self.category}/{name}.json')
+                # Changed the upload to s3 as the json file was acting strange, this makes it readable.
+                self.s3_client.put_object(
+                    Body = json.dumps(self.main_dict[f'{name}']), 
+                    Bucket = self.s3_name,
+                    Key = f'pinterest/{name}/{name}.json'
+                )
+
+    def _create_log(self) -> None:
+
+        ''' Defines a function which creates two logs. One of which logs pages visited as to not repeat
+            the other a log of where the most recent save for each category is in order to update the
+            most recent save. 
+            
+            Arguments: None
+            
+            Returns: None '''
+        
+        self.recent_save_dict = {}
+
+        for category in self.selected_category_names:
+            if category in self.s3_list:
+                update = ['remote', self.s3_name]
+            else:
+                update = 'local'
+            self.recent_save_dict[category] = update
+
+        with open('../data/log.json', 'w') as log, open('../data/recent-save-log.json', 'w') as save:
+            json.dump(list(self.link_set), log)
+            json.dump(self.recent_save_dict, save)
 
     def get_category_data(self) -> None:
         """Grab all image links, then download all images
@@ -479,17 +648,17 @@ class PinterestScraper:
         sleep(0.75)
         self._print_options(category_link_dict)
         self._get_user_input(category_link_dict)
-        # self._create_folders_locally('../data')
+        self._catgories_to_save_imgs()
         self._save_to_cloud_or_local()
-        self._grab_images_src(n_scrolls=10)
+        self._initialise_counter_and_local_folders('../data')
+        self._check_for_logs()
+        self._grab_images_src(n_scrolls=1)
         self._grab_page_data()
         self._data_dump()
-        self.driver.quit()
+        self._create_log()
+        print('Done and done!')
 
-    # Things that need work.
-    # Find a way to combine grab_image_src for story style and regular.
-    # Grab embedded youtube vids.
+if __name__ == "__main__": 
 
-if __name__ == "__main__":
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper.get_category_data()
