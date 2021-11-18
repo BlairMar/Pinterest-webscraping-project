@@ -10,7 +10,7 @@ import json
 from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
-
+import time # new - i added to time all methods
 
 
          
@@ -77,6 +77,7 @@ class PinterestScraper:
         }
 
     def _get_category_links(self, categories_xpath: str) -> dict:
+        start = time.time()
         """Extract the href attribute of each of the categories
         
         Args
@@ -93,9 +94,12 @@ class PinterestScraper:
         categories = self.driver.find_elements_by_xpath(categories_xpath)
         # Extract the href
         self.category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
-        return self.category_link_dict
+        end = time.time()
+        time_taken = print (f'It had taken {end - start} seconds to run this method')
+        return self.category_link_dict, time_taken # i added a timed output for every method in the class
         
     def _print_options(self, category_link_dict: dict):
+        start = time.time()
         """Print all categories available on the homepage
         
         Args
@@ -105,9 +109,12 @@ class PinterestScraper:
         print(f"\n The options (Total {len(category_link_dict)})  are:")
         for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
             print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
-        return 'success'         # do this for all methods which return nothing - make them return true, then add this to the unit_test
+        end = time.time()
+        time_taken = print (f'It had taken {end - start} seconds to run this method')
+        return 'success', time_taken        
 
     def _get_user_input(self, category_link_dict: dict):  
+        start = time.time()
         """Let user decide how many and which categories to download
         
         Args
@@ -139,6 +146,7 @@ class PinterestScraper:
         print(f"Categories selected: {self.selected_category.values()}")
 
     def _catgories_to_save_imgs(self, category):
+        start = time.time()
         to_save = input('\nDo you wish to save the images? [y/n]: ')
         cat_name = category.split('/')[4]
         if to_save == 'y':
@@ -149,6 +157,7 @@ class PinterestScraper:
             raise Exception("Invalid input.")
 
     def _save_to_cloud_or_local(self):
+        start = time.time()
         for category in self.selected_category.values():
             name = category.split('/')[4]
             self.main_dict[f"{name}"] = {}
@@ -166,6 +175,7 @@ class PinterestScraper:
 
 
     def _create_folders_locally(self, directory_path: str) -> None:
+        start = time.time()
         """Create corresponding folders to store images of each category
         Args
         ---------------------
@@ -188,6 +198,7 @@ class PinterestScraper:
         return 'success'
 
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
+        start = time.time()
         """Move to the page of a category and extract src attribute for the images 
             at the bottom of the page
             
@@ -215,6 +226,7 @@ class PinterestScraper:
                 print('Some errors occurred, most likely due to no images present')
 
     def _grab_images_src(self, n_scrolls=1) -> None:
+        start = time.time()
         """Get src links for all images
         
         Args
@@ -231,7 +243,7 @@ class PinterestScraper:
                                 n_scrolls)
 
     def _grab_title(self, title_element) -> None:
-
+        start = time.time()
         ''' Defines a function that grabs the title from a Pinterest page
             and adds it to the key "title" in self.current_dict.
             
@@ -245,7 +257,7 @@ class PinterestScraper:
             self.current_dict["title"] = 'No Title Data Available'
         
     def _grab_description(self, desc_container, desc_element) -> None:
-
+        start = time.time()
         ''' Defines a function that grabs the description from a Pinterest page
             and adds it to the key "description" in self.current_dict.
             
@@ -263,7 +275,7 @@ class PinterestScraper:
             self.current_dict["description"] = 'No description available'
 
     def _grab_user_and_count(self, dict_container, dict_element) -> None:
-
+        start = time.time()
         ''' Defines a function that grabs the poster name and follower count
             and appends adds them to the keys "poster_name" and "follower_count"
             respectively in self.current_dict.
@@ -288,7 +300,7 @@ class PinterestScraper:
             print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
-
+        start = time.time()
         ''' Defines a function that grabs the tags from a Pinterest page
             and adds them to the key "tag_list" in self.current_dict.
         
@@ -306,6 +318,7 @@ class PinterestScraper:
             self.current_dict["tag_list"] = 'No Tags Available'
 
     def _download_image(self, src: str) -> None:
+        start = time.time()
         """Download the image
         """
         if self._cat_imgs_to_save[self.category]:
@@ -325,7 +338,7 @@ class PinterestScraper:
                     sleep(0.5)
 
     def _grab_image_src(self) -> None:
-
+        start = time.time()
         ''' Defines a function that grabs the image src from a Pinterest page
             and adds it to the key "image_src" in self.current_dict.
             If there is no image and instead a video, grabs the video src
@@ -355,7 +368,7 @@ class PinterestScraper:
     # Need to look into fixing embedded youtube videos.
 
     def _grab_story_image_srcs(self) -> None:
-
+        start = time.time()
         ''' Function in testing. Third page layout (story) that has different html
             tabs to target to get info I need. Should be able to integrate later on
             in to one larger function which pulls for xpath dict. '''
@@ -389,7 +402,7 @@ class PinterestScraper:
             print('Story image grab error')
 
     def _grab_all_users_and_counts(self) -> None:
-
+        start = time.time()
         ''' Defines a function that checks if a user is officially recognised or
             a story. If official, runs official-user data grab, if not, runs non-official-user
             data grab or story_grab if a story.
@@ -427,7 +440,7 @@ class PinterestScraper:
             self._grab_story_image_srcs()
 
     def _grab_page_data(self) -> None:
-
+        start = time.time()
         ''' Defines a function which combines all data grabs and loops
             though all page links to grab the data from each page
             
@@ -451,7 +464,7 @@ class PinterestScraper:
             self.main_dict[f"{self.category}"][f"{self.category}_{self.counter_dict[self.category]}"] = self.current_dict
         
     def _data_dump(self) -> None:
-
+        start = time.time()
         ''' Defines a function which dumps the compiled dictionary
             to a json file.
             
@@ -476,6 +489,7 @@ class PinterestScraper:
                         f'pinterest/{self.category}/{name}.json')
 
     def get_category_data(self) -> None:
+        start = time.time()
         """Grab all image links, then download all images
         """
         category_link_dict = self._get_category_links(self.xpath_dict['categories_container'])
@@ -488,6 +502,7 @@ class PinterestScraper:
         self._grab_page_data()
         self._data_dump()
         self.driver.quit()
+
 
     # Things that need work.
     # Find a way to combine grab_image_src for story style and regular.
