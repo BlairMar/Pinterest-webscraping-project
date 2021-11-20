@@ -12,6 +12,7 @@ This project is part of the curriculum of the AiCore BootCamp. The aim of this p
 
 The contributors of this project are:
 | Full Name | Email |
+| ----- | ----- |
 | Pascal Weiliam Li Poo Kim | paswei98@gmail.com |
 | Luke Gardiner | ... |
 | Daniel Zakaiem | ... |
@@ -21,12 +22,12 @@ Our supervisor and instructor for this project is *Blair Martin* (\<email>).
 ## Libraries to install 📚
 
 The ***Python*** libraries that are required to make the scraper work are:
-- beautifulsoup4 [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
-- requests [Requests: HTTP for Humans](https://docs.python-requests.org/en/latest/)
-- boto3 [Boto3 documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
-- selenium [Selenium with Python](https://selenium-python.readthedocs.io/)
-- tqdm [tqdm](https://github.com/tqdm/tqdm)
-- urllib3 [urllib3](https://urllib3.readthedocs.io/en/stable/)
+- beautifulsoup4 - [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+- requests - [Requests: HTTP for Humans](https://docs.python-requests.org/en/latest/)
+- boto3 - [Boto3 documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+- selenium - [Selenium with Python](https://selenium-python.readthedocs.io/)
+- tqdm - [tqdm](https://github.com/tqdm/tqdm)
+- urllib3 - [urllib3](https://urllib3.readthedocs.io/en/stable/)
 
 
 ## Brief overview how to use the scraper
