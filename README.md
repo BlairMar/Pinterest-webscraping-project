@@ -14,8 +14,8 @@ The contributors of this project are:
 | Full Name | Email |
 | ----- | ----- |
 | Pascal Weiliam Li Poo Kim | paswei98@gmail.com |
-| Luke Gardiner | ... |
-| Daniel Zakaiem | ... |
+| Luke Gardiner | Luke.gardiner.95@gmail.com |
+| Daniel Zakaiem | danielzakaiem@yahoo.co.uk |
 
 Our supervisor and instructor for this project is *Blair Martin* (\<email>).
 
