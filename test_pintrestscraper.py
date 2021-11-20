@@ -44,47 +44,47 @@ class PinterestScraperTestCase(unittest.TestCase):
 
 
 
-    # def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
-    #     '''
-    #     This funtion is used to see if a dictionary is created
-    #     '''
-    #     test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
-    #     self.assertIsInstance(test_dict, dict) #test if output is dictionary
+    def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
+        '''
+        This funtion is used to see if a dictionary is created
+        '''
+        test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+        self.assertIsInstance(test_dict, dict) #test if output is dictionary
 
 
         
         
     
-    # def test_get_category_links(self):
-    #      '''
-    #      This function is used to test if correct links are retreived
-    #      '''
-    #      test_href_links = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')  # outputs an enumerated dictionary of the href links
+    def test_get_category_links(self):
+         '''
+         This function is used to test if correct links are retreived
+         '''
+         test_href_links = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')  # outputs an enumerated dictionary of the href links
         
-    #      hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
-    #                                    '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
-    #                                    '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
+         hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
+                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
+                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
                                        
-    #      hand_picked_category_hrefs = []
-    #      for xpath in hand_picked_category_xpaths:
-    #          hand_picked_category_hrefs.append(self.pinterest_scraper.driver.find_element_by_xpath(xpath).get_attribute('href'))
-    #      counter = 0
-    #      for ele in hand_picked_category_hrefs:   
-    #         if ele in test_href_links.values():
-    #             counter +=1
-    #             print(counter)
-    #      self.assertEqual(counter, 3) # add self to all asserts
+         hand_picked_category_hrefs = []
+         for xpath in hand_picked_category_xpaths:
+             hand_picked_category_hrefs.append(self.pinterest_scraper.driver.find_element_by_xpath(xpath).get_attribute('href'))
+         counter = 0
+         for ele in hand_picked_category_hrefs:   
+            if ele in test_href_links.values():
+                counter +=1
+                print(counter)
+         self.assertEqual(counter, 3) # add self to all asserts
 
 
 
-    # def test_print_options(self):
-    #     '''
-    #     This function tests if the entire method is run
-    #     '''
-    #     category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') #using output of last func for input of this function
-    #     test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
-    #     print (test_available_categories) 
-    #     self.assertEqual('success', test_available_categories) # ascertains that the entire function actually ran
+    def test_print_options(self):
+        '''
+        This function tests if the entire method is run
+        '''
+        category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') #using output of last func for input of this function
+        test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
+        print (test_available_categories) 
+        self.assertEqual('success', test_available_categories) # ascertains that the entire function actually ran
 
 
     
@@ -186,18 +186,23 @@ class PinterestScraperTestCase(unittest.TestCase):
 
 
     
-    #doesnt work
-    def test_grab_images_src(self):
-        '''
-        This function is used to test if the entire run
-        '''
-        image_source = self.pinterest_scraper._grab_images_src() 
-        self.assertEqual (image_source, 'success')                           
-    #'//*[@id="mweb-unauth-container"]/div/div/div/div[2]/div/div/div/div/div[1]/div/div/div/div/div/div/div/img'
-    # https://i.pinimg.com/originals/42/d3/e9/42d3e9b8104d429bfcc2653b42290d1f.jpg  
+    # #doesnt work
+    # def test_grab_images_src(self):
+    #     '''
+    #     This function is used to test if the entire run
+    #     '''
+    #     image_source = self.pinterest_scraper._grab_images_src()  # im thinking that the 'select_category" used is only defined locally in the scraper, so cannot be accessed here, unless made into an attribute pf the scraper- since importing the scraper only takes in methods and attributes
+    #     self.assertEqual (image_source, 'success')               # 'selected_category' is a varibale defined in the scope of pnly the scraper class? 
+    # #'//*[@id="mweb-unauth-container"]/div/div/div/div[2]/div/div/div/div/div[1]/div/div/div/div/div/div/div/img'
+    # # https://i.pinimg.com/originals/42/d3/e9/42d3e9b8104d429bfcc2653b42290d1f.jpg  
     
     
 #
+
+    # def test_grab_title (self):
+    #     pass
+
+
     
 #    #doesnt work
 #     def test_download_image(self):
