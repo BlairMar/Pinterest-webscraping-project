@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 import time # new - i added to time all methods
@@ -102,7 +102,7 @@ class PinterestScraper:
         # Extract the href
         self.category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method') 
+        print (f'It had taken {end - start} seconds to run this get_category_links method') 
         return self.category_link_dict
     
     def _print_options(self, category_link_dict: dict):
@@ -117,7 +117,7 @@ class PinterestScraper:
         for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
             print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method') 
+        print (f'It had taken {end - start} seconds to run this print_options method') 
         return 'success'      
 
     def _catgories_to_save_imgs(self) -> None:
@@ -152,7 +152,7 @@ class PinterestScraper:
             else:
                 print('\nPlease re-enter your answer. ')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method') 
+        print (f'It had taken {end - start} seconds to run this catgories_to_save_imgs method') 
    
     def _get_user_input(self, category_link_dict: dict):  
         start = time.time()
@@ -205,7 +205,7 @@ class PinterestScraper:
         self.selected_category_names = [category.split('/')[4] for category in self.selected_category.values()]
         print(f"Categories selected: {self.selected_category_names}")
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method') 
+        print (f'It had taken {end - start} seconds to run this get_user_input method') 
     
     def _interior_cloud_save_loop(self, remote) -> None or str:
         start = time.time()
@@ -254,7 +254,7 @@ class PinterestScraper:
         else:
             print('\nYour selection was not valid, please choose again. ')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method') 
+        print (f'It had taken {end - start} seconds to run this interior_cloud_save_loop method') 
     
     def _save_to_cloud_or_local(self) -> None:
         start = time.time()
@@ -273,7 +273,7 @@ class PinterestScraper:
             else:
                 print('\nLoop structure error. Luke you stupid...')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method') 
+        print (f'It had taken {end - start} seconds to run this save_to_cloud_or_local method') 
     
     def _initialise_counter_and_local_folders(self, directory_path) -> None:
         start = time.time()
@@ -297,7 +297,7 @@ class PinterestScraper:
                     print(f"\nCreating local folder : {category}")
                     os.makedirs(f'{self.root_save_path}/{category}')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method') 
+        print (f'It had taken {end - start} seconds to run this initialise_counter_and_local_folders method') 
     
     def _check_for_logs(self) -> None:
         start = time.time()
@@ -352,7 +352,7 @@ class PinterestScraper:
         
                         print('\nPlease re-enter your input. ')
         end = time.time() 
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this check_for_logs method')   
         
     
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
@@ -383,7 +383,7 @@ class PinterestScraper:
             except: 
                 print('\nSome errors occurred, most likely due to no images present')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this extract_links method')   
         return 'success'
         
     
@@ -405,7 +405,7 @@ class PinterestScraper:
                                 self.xpath_dict['links_element'],
                                 n_scrolls)
         end = time.time()    
-        print (f'It had taken {end - start} seconds to run this method')  
+        print (f'It had taken {end - start} seconds to run this grab_images_src method')  
         return 'success'                      
 
     def _grab_title(self, title_element) -> None:
@@ -422,7 +422,7 @@ class PinterestScraper:
         except:
             self.current_dict["title"] = 'No Title Data Available'
         end=time.time()
-        print (f'It had taken {end - start} seconds to run this method')  
+        print (f'It had taken {end - start} seconds to run this grab_title method')  
         
     def _grab_description(self, desc_container, desc_element) -> None:
         start = time.time()
@@ -442,7 +442,7 @@ class PinterestScraper:
         except:
             self.current_dict["description"] = 'No description available'
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this grab_description method')   
 
     def _grab_user_and_count(self, dict_container, dict_element) -> None:
         start = time.time()
@@ -469,7 +469,7 @@ class PinterestScraper:
             self.current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when trying to grab user info.'
             print('User Info Error')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')  
+        print (f'It had taken {end - start} seconds to run this grab_user_and_count method')  
 
     def _grab_tags(self, tag_container) -> None:
         start = time.time()
@@ -489,7 +489,7 @@ class PinterestScraper:
         except:
             self.current_dict["tag_list"] = 'No Tags Available'
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')  
+        print (f'It had taken {end - start} seconds to run this grab_tags method')  
 
     def _download_image(self, src: str) -> None:
         start = time.time()
@@ -511,7 +511,7 @@ class PinterestScraper:
 
                     sleep(0.5)
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this download_image method')   
 
     def _grab_image_src(self) -> None:
         start = time.time()
@@ -541,7 +541,7 @@ class PinterestScraper:
             self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when trying to grab img src.'
             print('\nImage grab Error. Possible embedded video (youtube).')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this grab_image_src method')   
 
     # Need to look into fixing embedded youtube videos.
 
@@ -579,7 +579,7 @@ class PinterestScraper:
             self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
             print('\nStory image grab error')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this grab_story_image_srcs method')   
     
     def _grab_all_users_and_counts(self) -> None:
         start = time.time()
@@ -619,7 +619,7 @@ class PinterestScraper:
             self._grab_tags(self.xpath_dict['story_tag_container'])
             self._grab_story_image_srcs()
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this grab_all_users_and_counts method')   
     
     def _grab_page_data(self) -> None:
         start = time.time()
@@ -643,7 +643,7 @@ class PinterestScraper:
             self._grab_all_users_and_counts()
             self.main_dict[f"{self.category}"][f"{self.category}_{self.counter_dict[self.category]}"] = self.current_dict
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this grab_page_data method')   
     
     def _data_dump(self) -> None:
         start = time.time()
@@ -670,7 +670,7 @@ class PinterestScraper:
                     Key = f'pinterest/{name}/{name}.json'
                 )
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')  
+        print (f'It had taken {end - start} seconds to run this data_dump method')  
     
     def _create_log(self) -> None:
         start = time.time()
@@ -695,7 +695,7 @@ class PinterestScraper:
             json.dump(list(self.link_set), log)
             json.dump(self.recent_save_dict, save)
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')  
+        print (f'It had taken {end - start} seconds to run this create_log method')  
     
     def get_category_data(self) -> None:
         start = time.time()
@@ -715,9 +715,11 @@ class PinterestScraper:
         self._create_log()
         print('Done and done!')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this method')   
+        print (f'It had taken {end - start} seconds to run this get_category_data method')   
 
 if __name__ == "__main__": 
 
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper.get_category_data()
+
+
