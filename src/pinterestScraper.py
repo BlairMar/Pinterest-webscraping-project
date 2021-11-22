@@ -114,35 +114,44 @@ class PinterestScraper:
 
     def _catgories_to_save_imgs(self) -> None:
 
-        get_all = ''
-        while get_all != 'N' and get_all != 'Y':
-            get_all = input('\nWould you like to download images for all selected categories? Y or N: ').upper()
-            if get_all == 'Y':
+        get_any = ''
+        while get_any != 'N' and get_any != 'Y':
+            get_any = input('\nWould you like to download images for any of the selected categories? Y or N: ').upper()
+            if get_any == 'Y':
+                print('A = All categories: ')
+                download_check = ['A']
+                for index, category in enumerate(self.selected_category_names):
+                    print(f'{index + 1} = {category}')
+                    download_check.append(str(index + 1))
+                while True:
+                    try: 
+                        downloads = input(f'\nPlease select which categories you would like to download images for.\n\
+Enter your answer as a comma separated list: ').upper()
+                        downloads = (downloads.replace(' ', '')).split(',')
+                        repeat_check = []
+                        for option in downloads:
+                            repeat_check.append(option)
+                            if option not in download_check:
+                                assert option in download_check
+                            assert len(repeat_check) == len(set(repeat_check))
+                        if 'A' in downloads:
+                            for cat_name in self.selected_category_names:
+                                self._cat_imgs_to_save[cat_name] = True
+                        else:
+                            for option in downloads:
+                                self._cat_imgs_to_save[self.selected_category_names[int(option) - 1]] = True
+                            for name in self.selected_category_names:
+                                if name not in self._cat_imgs_to_save.keys():
+                                    self._cat_imgs_to_save[name] = False
+                        break
+                    except:
+                        print('\nPlease only select options from the provided list. No duplicates. ')
+            elif get_any == 'N':
+                print('\nNo images will be downloaded. ')
                 for cat_name in self.selected_category_names:
-                    self._cat_imgs_to_save[cat_name] = True
-            elif get_all == 'N':
-                get_some = ''
-                while get_some != 'N' and get_some != 'Y':
-                    get_some = input('\nWould you like to download images for some of the selected categories? Y or N: ').upper()
-                    if get_some == 'Y': 
-                        for cat_name in self.selected_category_names:
-                            to_save = ''
-                            while to_save != 'Y' and to_save != 'N':
-                                to_save = input(f'\nDo you wish to save the images for {cat_name}? [Y/N]: ').upper()
-                                if to_save == 'Y':
-                                    self._cat_imgs_to_save[cat_name] = True
-                                elif to_save == 'N':
-                                    self._cat_imgs_to_save[cat_name] = False
-                                else:
-                                    print('\nPlease retry your input. ')
-                    elif get_some == 'N':
-                        print('\nNo images will be downloaded. ')
-                        for cat_name in self.selected_category_names:
-                            self._cat_imgs_to_save[cat_name] = False
-                    else:
-                        print('\nUnrecognised input, please retry.')
+                    self._cat_imgs_to_save[cat_name] = False
             else:
-                print('\nPlease re-enter your answer. ')
+                print('\nCategory image error, Luke, debug it... ')
 
 
     def _get_user_input(self, category_link_dict: dict):  
