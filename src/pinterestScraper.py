@@ -12,6 +12,7 @@ import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
+import zipfile
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -62,7 +63,6 @@ class PinterestScraper:
         self.current_link = ''
         self._cat_imgs_to_save = {}
         self.s3_client = boto3.client('s3')
-        self.to_s3 = False
         self.xpath_dict = {
             'official_user_container': '//div[@data-test-id="official-user-attribution"]',
             'official_user_element': './/div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]',
@@ -152,12 +152,13 @@ class PinterestScraper:
         ---------------------
         category_link_dict: dict
         """
-        try:    
-            categories_num = int(input(f"\nHow many categories of images do you wish to grab? 1 to {len(category_link_dict)}: \n"))
-            assert categories_num <= len(category_link_dict)
-        except:  
-            raise Exception(f"\nInput cannot be greater than {len(category_link_dict)}.") 
-        pass
+        while True:
+            try:    
+                categories_num = int(input(f"\nHow many categories of images do you wish to grab? 1 to {len(category_link_dict)}: \n"))
+                assert 0 < categories_num <= len(category_link_dict)
+                break
+            except:  
+                print(f"\nInvalid input, try again.") 
 
         self.selected_category = {}
 
@@ -206,11 +207,10 @@ class PinterestScraper:
                       None at all other times '''
 
         if remote == 'Y':
-            # self.to_s3 = True
-            self.s3_name = input('\nPlease enter the name of your desired S3 bucket. ')
+            self.s3_bucket = input('\nPlease enter the name of your desired S3 bucket. ')
             go_on = ''
             while go_on != 'Y' and go_on != 'N':
-                go_on = input(f'\nYou have enetered {self.s3_name} as your s3 bucket. Is this correct? Y or N: ').upper()
+                go_on = input(f'\nYou have enetered {self.s3_bucket} as your s3 bucket. Is this correct? Y or N: ').upper()
                 if go_on == 'Y':
                     all_or_some = ''
                     while all_or_some != 'N' and all_or_some != 'Y':
@@ -237,7 +237,6 @@ class PinterestScraper:
                     print('\nPlease re-enter the name of your bucket. ')
                     return 'retry'
         elif remote == 'N':
-            # self.to_s3 == False
             print('\nAll data will be stored on your local machine. ')
         else:
             print('\nYour selection was not valid, please choose again. ')
@@ -259,9 +258,9 @@ class PinterestScraper:
             else:
                 print('\nLoop structure error. Luke you stupid...')
 
-    def _initialise_counter_and_local_folders(self, directory_path) -> None:
+    def _initialise_local_folders(self, directory_path) -> None:
 
-        ''' Defines a function which initialises the counter dict with the categories selected for the current run and folders for
+        ''' Defines a function which initialises folders for
             local saves. 
             
             Arguments: directory_path: str 
@@ -271,7 +270,6 @@ class PinterestScraper:
         self.root_save_path = directory_path
 
         for category in self.selected_category_names:
-            self.counter_dict[f'{category}'] = 0
             # Create a folder named data to store a folder for each category
             if not os.path.exists(f'{self.root_save_path}'):
                 os.makedirs(f'{self.root_save_path}')
@@ -281,15 +279,110 @@ class PinterestScraper:
                     print(f"\nCreating local folder : {category}")
                     os.makedirs(f'{self.root_save_path}/{category}')
 
+    def _initialise_counter(self) -> None:
+
+        for category in self.selected_category_names:
+            self.counter_dict[f'{category}'] = 0
+
+    def _delete_redundant_saves(self, save, recent_save, fresh) -> None:
+
+        ''' Defines a function which will delete redundant files. '''
+
+        # If save remote and new bucket same: pass
+        if save in self.s3_list and recent_save[save][0] == 'remote' \
+        and recent_save[save][1] == self.s3_bucket:
+            # If user wants to start anew, still need to delete old data.
+            if fresh == 'N':
+                s3 = boto3.resource('s3')
+                bucket = s3.Bucket(recent_save[save][1])
+                bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
+        # If save remote and new bucket diff: move and delete
+        elif save in self.s3_list and recent_save[save][0] == 'remote' \
+        and recent_save[save][1] != self.s3_bucket:
+            s3 = boto3.resource('s3')
+            src_bucket = s3.Bucket(recent_save[save][1])
+            target_bucket = s3.Bucket(self.s3_bucket)
+            print('Moving saved files to specified location: ')
+            for src in tqdm(src_bucket.objects.filter(Prefix=f"pinterest/{save}/")):
+                # Move any items from remote bucket in to new remote bucket.
+                if fresh == 'Y':
+                    copy_source = {
+                        'Bucket': src_bucket.name,
+                        'Key': src.key
+                    }
+                    target_bucket.copy(copy_source, src.key)
+                    # Delete old file.
+                    src.delete()
+                elif fresh == 'N':
+                    # Delete old file.
+                    src.delete()
+        # If save remote and no new bucket: move local and delete
+        elif save not in self.s3_list and recent_save[save][0] == 'remote':
+            s3 = boto3.resource('s3')
+            src_bucket = s3.Bucket(recent_save[save][1])
+            print('Moving saved files to specified location: ')
+            for src in tqdm(src_bucket.objects.filter(Prefix=f"pinterest/{save}/")):
+                # Move any items from remote bucket in to new local folder.
+                if fresh == 'Y':
+                    src_bucket.download_file(src.key, f"../data/{save}/{src.key.split('/')[2]}")
+                    # Delete old remote file.
+                    src.delete()
+                elif fresh == 'N':
+                    # Delete old remote file.
+                    src.delete()
+        # If save local and new save local: pass
+        elif save not in self.s3_list and recent_save[save] == 'local':
+            # If user wants to start anew, still need to delete old data.
+            if fresh == 'N':
+                print('Removing old save data: ')
+                for item in tqdm(os.listdir(f'../data/{save}')):
+                    os.remove(f'../data/{save}/{item}')
+        # If save local and new save remote: move and delete
+        elif save in self.s3_list and recent_save[save] == 'local':
+            s3 = boto3.resource('s3')
+            print('Moving saved files to specified location: ')
+            for item in tqdm(os.listdir(f'../data/{save}')):
+                # Move any items from local to new remote bucket.
+                if fresh == 'Y':
+                    self.s3_client.upload_file(f'../data/{save}/{item}', self.s3_bucket, f'pinterest/{save}/{item}')
+                elif fresh == 'N':
+                    pass
+            # Delete old local file
+            shutil.rmtree(f'../data/{save}')
+        elif not os.path.exists('../data/recent-save-log.json'):
+            print('No recent-save-log.json file present. ')
+        else: 
+            print('Missed a scenario in _delete_redundant_saves. ')
+            self.driver.quit()
+
+    ''' There will be an error when saying no to continuing from save file. 
+        Need to make it so that when I say no, file is just deleted, not moved.'''
+
     def _check_for_logs(self) -> None:
 
         ''' Defines a function which checks to see where/if there is previous data from which to 
             continue. This would need to read from log.json and recent_saves.json '''
 
-        ''' Something about current list of categories selected
-            if any of the categories already have a save point in save log file.
-        
-            Something about how the save log is appeneded to '''
+        ''' Need to find if current run cats are being saved to a different location than 
+            their previous save. If so we then transfer all data to new location and delete old.
+            Better than current method.
+            
+            Something like:
+            
+                for save in saves:
+                    if old_save_location != new_save_location: # Check new_save_location by self.s3_list
+                        copy all data from old save to new save        and self.s3_bucket
+                        make sure all data is in the correct dict
+                        delete old save.
+                        
+            Easy peasy? '''        
+
+        ''' So, new_save_location needs to be defined after user has made all their choices. Needs to be done for save in saves.
+            In order to get this:
+                - When user says they want to save to bucket, save bucket as bucket. Will have self.bucket anyway.
+                - If not self.bucket then new_save_loc = local.
+                - If self.bucket then for each category in self.s3_list and in saves, new_save_loc = [remote, s3_bucket]
+                  else: new_save_loc = local '''
 
         if os.path.exists('../data/recent-save-log.json'):
             #[if x in current_cat_list? for x in recent_save.values()]
@@ -318,36 +411,36 @@ class PinterestScraper:
                             if recent_saves[save] == 'local':
                                 with open(f'../data/{save}/{save}.json', 'r') as load:
                                     self.main_dict[f'{save}'] = json.load(load)
-                                shutil.rmtree(f'../data/{save}')
+                                # shutil.rmtree(f'../data/{save}')
                             elif recent_saves[save][0] == 'remote':
-                                s3_save = recent_saves[save][1]
                                 obj = self.s3_client.get_object(
-                                    Bucket = s3_save,
+                                    Bucket = recent_saves[save][1],
                                     Key = (f'pinterest/{save}/{save}.json')
                                 ) 
                                 self.main_dict[f'{save}'] = json.loads(obj['Body'].read())
-                                s3 = boto3.resource('s3')
-                                bucket = s3.Bucket(s3_save)
-                                bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
+                                # s3 = boto3.resource('s3')
+                                # bucket = s3.Bucket(recent_saves[save][1])
+                                # bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
                             else: 
                                 print('\nSomething fishy going on with the save_log. ')
+                            self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
                     elif fresh == 'N':
                         tuples_content = [item for item in tuples_content if item[0].split('/')[0] not in saves]
                         self.link_set = set(tuples_content)
                         self.log = set(tuples_content)
                         for save in saves:
-                            if recent_saves[save] == 'local':
-                                shutil.rmtree(f'../data/{save}')
-                            elif recent_saves[save][0] == 'remote':
-                                s3_save = recent_saves[save][1]
-                                s3 = boto3.resource('s3')
-                                bucket = s3.Bucket(s3_save)
-                                bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
-                            else: 
-                                print('\nSomething fishy going on with the save_log. Embedded ')
-                        print('\nExisting data will be overwritten if you are saving in the same directory as your last save. ')
+                            self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
+                            # if recent_saves[save] == 'local':
+                            #     shutil.rmtree(f'../data/{save}')
+                            # elif recent_saves[save][0] == 'remote':
+                            #     s3 = boto3.resource('s3')
+                            #     bucket = s3.Bucket(recent_saves[save][1])
+                            #     bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
+                            # else: 
+                            #     print('\nSomething fishy going on with the save_log. Embedded ')
+                        # print('\nExisting data will be overwritten if you are saving in the same directory as your last save. ')
                     else:
-                        self.link_set = set(tuples_content)
+                        # self.link_set = set(tuples_content)
                         print('\nPlease re-enter your input. ')
             else:
                 self.link_set = set(tuples_content)
@@ -486,7 +579,7 @@ class PinterestScraper:
                     # print(f'{tempdir}/{self.category}_{self.counter_dict[self.category]}.jpg')
                     sleep(0.5)
                     self.s3_client.upload_file(
-                        f'{tempdir}/{self.category}_{self.counter_dict[self.category]}.jpg', self.s3_name, 
+                        f'{tempdir}/{self.category}_{self.counter_dict[self.category]}.jpg', self.s3_bucket, 
                         f'pinterest/{self.category}/{self.category}_{self.counter_dict[self.category]}.jpg')
 
                     sleep(0.5)
@@ -503,7 +596,7 @@ class PinterestScraper:
             Returns: None '''
         try:
             try: # Need this try statement to see if image in an image or other media type.
-                image_element = WebDriverWait(self.driver, 0.5).until(
+                image_element = WebDriverWait(self.driver, 1).until(
                     EC.presence_of_element_located((By.XPATH, '//div[@data-test-id="pin-closeup-image"]//img'))
                 )
                 self.current_dict["is_image_or_video"] = 'image'
@@ -528,7 +621,7 @@ class PinterestScraper:
             in to one larger function which pulls for xpath dict. '''
         try: 
             try:
-                _ = WebDriverWait(self.driver, 0.5).until(
+                _ = WebDriverWait(self.driver, 1).until(
                         EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
                     )
                 image_container = self.driver.find_element_by_xpath('//div[@aria-label="Story Pin image"]')
@@ -628,7 +721,8 @@ class PinterestScraper:
             os.mkdir('../data')
         os.chdir('..')
         os.chdir('data')
-        for name in self.selected_category_names:
+        print('Dumping Data: ')
+        for name in tqdm(self.selected_category_names):
             if name not in self.s3_list:
                 with open(f'{name}/{name}.json', 'w') as loading:
                     json.dump(self.main_dict[f"{name}"], loading)
@@ -636,7 +730,7 @@ class PinterestScraper:
                 # Changed the upload to s3 as the json file was acting strange, this makes it readable.
                 self.s3_client.put_object(
                     Body = json.dumps(self.main_dict[f'{name}']), 
-                    Bucket = self.s3_name,
+                    Bucket = self.s3_bucket,
                     Key = f'pinterest/{name}/{name}.json'
                 )
 
@@ -651,15 +745,16 @@ class PinterestScraper:
             Returns: None '''
         
         # if dict exists json.load
+        print('Creating save logs: ')
         if os.path.exists('../data/recent-save-log.json'):
             with open('../data/recent-save-log.json', 'r') as load:
                 self.recent_save_dict = json.load(load)
         else:
             self.recent_save_dict = {}
 
-        for category in self.selected_category_names:
+        for category in tqdm(self.selected_category_names):
             if category in self.s3_list:
-                update = ['remote', self.s3_name]
+                update = ['remote', self.s3_bucket]
             else:
                 update = 'local'
             self.recent_save_dict[category] = update
@@ -677,8 +772,9 @@ class PinterestScraper:
         self._get_user_input(category_link_dict)
         self._catgories_to_save_imgs()
         self._save_to_cloud_or_local()
-        self._initialise_counter_and_local_folders('../data')
-        self._check_for_logs()
+        self._initialise_counter()
+        self._initialise_local_folders('../data')
+        self._check_for_logs()     
         self._grab_images_src(n_scrolls=1)
         self._grab_page_data()
         self._data_dump()
@@ -689,3 +785,6 @@ if __name__ == "__main__":
 
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper.get_category_data()
+
+    # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
+    # it as an actual return to pass it into the following function.
