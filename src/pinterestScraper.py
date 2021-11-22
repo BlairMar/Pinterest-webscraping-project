@@ -131,9 +131,8 @@ Enter your answer as a comma separated list: ').upper()
                         repeat_check = []
                         for option in downloads:
                             repeat_check.append(option)
-                            if option not in download_check:
-                                assert option in download_check
-                            assert len(repeat_check) == len(set(repeat_check))
+                            assert option in download_check
+                        assert len(repeat_check) == len(set(repeat_check))
                         if 'A' in downloads:
                             for cat_name in self.selected_category_names:
                                 self._cat_imgs_to_save[cat_name] = True
@@ -143,6 +142,8 @@ Enter your answer as a comma separated list: ').upper()
                             for name in self.selected_category_names:
                                 if name not in self._cat_imgs_to_save.keys():
                                     self._cat_imgs_to_save[name] = False
+                        print_list = [key for key, value in self._cat_imgs_to_save.items() if value == True]
+                        print(f'\nDownloading images for {print_list}')
                         break
                     except:
                         print('\nPlease only select options from the provided list. No duplicates. ')
@@ -221,27 +222,31 @@ Enter your answer as a comma separated list: ').upper()
             while go_on != 'Y' and go_on != 'N':
                 go_on = input(f'\nYou have enetered {self.s3_bucket} as your s3 bucket. Is this correct? Y or N: ').upper()
                 if go_on == 'Y':
-                    all_or_some = ''
-                    while all_or_some != 'N' and all_or_some != 'Y':
-                        all_or_some = input('\nWould you like to download everything to this bucket? Y or N: ').upper()
-                        if all_or_some == 'Y':
-                            print('\nAll data will be stored on your s3 bucket. ')
-                            self.s3_list = self.selected_category_names
-                        elif all_or_some == 'N':
-                            print('\nPlease select which of the categories you wish to download to your bucket. ')
-                            for cat_name in self.selected_category_names:
-                                choice = ''
-                                while choice != 'N' and choice != 'Y':
-                                    choice = input(f'\nWould you like to download {cat_name} to your bucket? Y or N: ').upper()
-                                    if choice == 'Y':
-                                        self.s3_list.append(cat_name)
-                                        print(f'\n{cat_name} will be downloaded remotely. ')
-                                    elif choice == 'N':
-                                        print(f'\n{cat_name} will be stored locally. ')
-                                    else:
-                                        print('\nUnsupported selection, please choose again. ')
-                        else:
-                           print('\nUnrecognized input, please select again. ')
+                    print('A = All categories: ')
+                    upload_check = ['A']
+                    for index, category in enumerate(self.selected_category_names):
+                        print(f'{index + 1} = {category}')
+                        upload_check.append(str(index + 1))
+                    while True:
+                        try:
+                            all_or_some = input('\nWhich categories would you like to download \
+to this bucket?\nPlease enter your choice as a comma separated \
+list. ').upper()
+                            all_or_some = (all_or_some.replace(' ', '')).split(',')
+                            print(all_or_some)
+                            repeat_check = []
+                            for option in all_or_some:
+                                repeat_check.append(option)
+                                assert option in upload_check
+                            assert len(repeat_check) == len(set(repeat_check))
+                            if 'A' in all_or_some:
+                                self.s3_list = self.selected_category_names
+                            else:
+                                for option in all_or_some:
+                                    self.s3_list.append(self.selected_category_names[int(option) - 1])
+                            break
+                        except:
+                            print('\nPlease only select options from the provided list. No duplicates. ')
                 elif go_on == 'N':
                     print('\nPlease re-enter the name of your bucket. ')
                     return 'retry'
@@ -788,6 +793,7 @@ Enter your answer as a comma separated list: ').upper()
         self._grab_page_data()
         self._data_dump()
         self._create_log()
+        self.driver.quit()
         print('Done and done!')
 
 if __name__ == "__main__": 
