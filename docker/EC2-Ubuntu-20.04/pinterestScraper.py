@@ -48,6 +48,8 @@ class PinterestScraper:
         self.category_image_count = defaultdict(int)
         self.root = root
         chrome_options = Options()
+        chrome_options.add_argument('--ignore-certificate-errors')
+        chrome_options.add_argument('--allow-running-insecure-content')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--headless')
         self.driver = webdriver.Chrome(options=chrome_options)
@@ -595,6 +597,8 @@ class PinterestScraper:
             self.counter_dict[f"{self.category}"] += 1
             self.current_dict = {}
             self.current_link = link
+            print(link)
+            sleep(1.0)
             self.driver.get(self.current_link)
             self._grab_all_users_and_counts()
             self.main_dict[f"{self.category}"][f"{self.category}_{self.counter_dict[self.category]}"] = self.current_dict
