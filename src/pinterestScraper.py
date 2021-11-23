@@ -277,7 +277,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 remote = input('\nWould you like to save any of your data/images to a remote bucket? Y or N: ').upper()
                 remote = self._interior_cloud_save_loop(remote)
                 if remote == None:
-                    breaks
+                    break
             elif remote == 'retry':
                 remote = 'Y'
                 remote = self._interior_cloud_save_loop(remote)
