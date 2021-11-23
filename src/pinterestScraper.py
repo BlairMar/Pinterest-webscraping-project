@@ -388,6 +388,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
         ''' Defines a function which checks to see where/if there is previous data from which to 
             continue. This would need to read from log.json and recent_saves.json '''
 
+        
         ''' Need to find if current run cats are being saved to a different location than 
             their previous save. If so we then transfer all data to new location and delete old.
             Better than current method.
@@ -454,7 +455,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                         self.link_set = set(tuples_content)
                         self.log = set(tuples_content)
                         for save in saves:
-                            self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
+                            self._delete_redundant_saves(save = save, 
+                            recent_save = recent_saves, fresh = fresh)
                             # if recent_saves[save] == 'local':
                             #     shutil.rmtree(f'../data/{save}')
                             # elif recent_saves[save][0] == 'remote':
@@ -502,9 +504,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
     def _grab_images_src(self, n_scrolls=1) -> None:
         """Get src links for all images
         
-        Args
+        Args:
         ---------------------
-        None
+        n_scrolls - Number of times to scroll through a page
         """
         
         # Loop through each category
@@ -560,7 +562,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             container = self.driver.find_element_by_xpath(dict_container)
             poster_element = container.find_element_by_xpath(dict_element)          
             self.current_dict["poster_name"] = poster_element.get_attribute('textContent')
-            # TODO:Replace the hard coded xpath
+            # TODO: Replace the hard coded xpath
             follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
             followers = follower_element[-1].get_attribute('textContent')
             # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
@@ -815,7 +817,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
         self._grab_images_src(n_scrolls=scrolling_times)
         self._grab_page_data()
         self._data_dump()
-        self._create_log()
+        log_created = self._create_log()
         self.driver.quit()
         print('Done and done!')
 
