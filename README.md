@@ -39,3 +39,9 @@ The ***Python*** libraries that are required to make the scraper work are:
 3. The users have the flexibility to choose whether to download the images or not, and if they want to download the data, they also have the option to choose whether they want to download the data locally on their PC or directly to an ***AWS S3 Bucket***, provided that the users have public buckets to upload to. The data do not consist only of images but also JSON files which contain the link to each image, description, number of views, etc.
 
 4. Once all the choices have been made, the scraper can be left to perform its task.
+
+## Deploying the scraper in a Docker container on EC2
+
+The EC2 image that should be used to use Docker and for testing is the *Ubuntu (focal) 20.04*. It will not work on the *AMI Linux 2 Free Tier*.
+
+It is important to note that the codes in the [pinterestScraper.py](docker/EC2-Ubuntu-20.04/pinterestScraper.py) are slightly different from the Python script run locally. This is just the way the codes were implemented to work on the EC2 instance and Docker.  
