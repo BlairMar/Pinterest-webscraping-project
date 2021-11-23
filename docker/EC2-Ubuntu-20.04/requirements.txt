@@ -1,0 +1,6 @@
+beautifulsoup4==4.9.3
+requests==2.25.1
+boto3
+selenium
+tqdm
+urllib3
