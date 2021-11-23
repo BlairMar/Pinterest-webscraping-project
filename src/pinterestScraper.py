@@ -55,13 +55,13 @@ class PinterestScraper:
         self.save_path = None
         self.link_set = set()
         self.log = set()
-        self.fresh_set = set()
+        # self.fresh_set = set() # No need to define as attribute if the set is used in only one class
         self.s3_list = []
-        # self.current_run_categories = [] made redundant by self.selected_category_names
+        # self.current_run_categories = [] # Made redundant by self.selected_category_names
         self.current_dict = {}
         self.main_dict = {}
         self.counter_dict = {} # A counter dict to order the data we grab from each page.
-        self.current_link = ''
+        # self.current_link = ''
         self._cat_imgs_to_save = {}
         self.s3_client = boto3.client('s3')
         self.xpath_dict = {
@@ -114,7 +114,7 @@ class PinterestScraper:
         for idx, category in category_link_dict.items():
             print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
 
-    def _categories_to_save_imgs(self) -> None:
+    def _categories_to_save_imgs(self, selected_category_names) -> None:
 
         get_any = ''
         while get_any != 'N' and get_any != 'Y':
@@ -123,7 +123,7 @@ any of the selected categories? Y or N: ').upper()
             if get_any == 'Y':
                 print('A = All categories: ')
                 download_check = ['A']
-                for index, category in enumerate(self.selected_category_names):
+                for index, category in enumerate(selected_category_names):
                     print(f'{index + 1} = {category}')
                     download_check.append(str(index + 1))
                 while True:
@@ -137,12 +137,12 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
                             assert option in download_check
                         assert len(repeat_check) == len(set(repeat_check))
                         if 'A' in downloads:
-                            for cat_name in self.selected_category_names:
+                            for cat_name in selected_category_names:
                                 self._cat_imgs_to_save[cat_name] = True
                         else:
                             for option in downloads:
-                                self._cat_imgs_to_save[self.selected_category_names[int(option) - 1]] = True
-                            for name in self.selected_category_names:
+                                self._cat_imgs_to_save[selected_category_names[int(option) - 1]] = True
+                            for name in selected_category_names:
                                 if name not in self._cat_imgs_to_save.keys():
                                     self._cat_imgs_to_save[name] = False
                         print_list = [key for key, value in self._cat_imgs_to_save.items() if value == True]
@@ -152,7 +152,7 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
                         print('\nPlease only select options from the provided list. No duplicates. ')
             elif get_any == 'N':
                 print('\nNo images will be downloaded. ')
-                for cat_name in self.selected_category_names:
+                for cat_name in selected_category_names:
                     self._cat_imgs_to_save[cat_name] = False
             else:
                 print('\nCategory image error, Luke, debug it... ')
@@ -280,7 +280,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             else:
                 print('\nLoop structure error. Luke you stupid...')
 
-    def _initialise_local_folders(self, directory_path) -> None:
+    def _initialise_local_folders(self, directory_path, selected_category_names) -> None:
 
         ''' Defines a function which initialises folders for
             local saves. 
@@ -291,7 +291,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         self.root_save_path = directory_path
 
-        for category in self.selected_category_names:
+        for category in selected_category_names:
             # Create a folder named data to store a folder for each category
             if not os.path.exists(f'{self.root_save_path}'):
                 os.makedirs(f'{self.root_save_path}')
@@ -301,10 +301,12 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     print(f"\nCreating local folder : {category}")
                     os.makedirs(f'{self.root_save_path}/{category}')
 
-    def _initialise_counter(self) -> None:
+    def _initialise_counter(self, selected_category_names) -> dict:
 
-        for category in self.selected_category_names:
+        for category in selected_category_names:
             self.counter_dict[f'{category}'] = 0
+
+        return self.counter_dict
 
     def _delete_redundant_saves(self, save, recent_save, fresh) -> None:
 
@@ -722,14 +724,14 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         # category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
 
-        self.fresh_set = self.link_set.difference(self.log)
+        fresh_set = self.link_set.difference(self.log)
 
-        for (cat, link) in tqdm(list(self.fresh_set)):
+        for (cat, link) in tqdm(list(fresh_set)):
             self.category = cat.split("/")[0]
             self.counter_dict[f"{self.category}"] += 1
             self.current_dict = {}
-            self.current_link = link
-            self.driver.get(self.current_link)
+            # self.current_link = link Use link directly
+            self.driver.get(link)
             self._grab_all_users_and_counts()
             self.main_dict[f"{self.category}"][f"{self.category}_{self.counter_dict[self.category]}"] = self.current_dict
 
@@ -798,16 +800,16 @@ list. Values between 1 and {len(category_link_dict)}: ')
         category_link_dict = self._get_category_links(self.xpath_dict['categories_container'])
         sleep(0.75)
         self._print_options(category_link_dict)
-        self._get_user_input(category_link_dict)
-        self._categories_to_save_imgs()
+        selected_category_names = self._get_user_input(category_link_dict)
+        self._categories_to_save_imgs(selected_category_names)
         self._save_to_cloud_or_local()
-        self._initialise_counter()
-        self._initialise_local_folders('../data')
+        self._initialise_counter(selected_category_names)
+        self._initialise_local_folders('../data', selected_category_names)
         self._check_for_logs()
         # TODO: May be add a while True
         try:
-            scrolling_times = int(input('\nHow many times to scroll each page \
-(~5 to 10 images per category)?: '))
+            scrolling_times = int(input('\nHow many times to scroll through each page \
+(~5 to 10 images on average per category)?: '))
         except:
             raise Exception('Invalid input')
         self._grab_images_src(n_scrolls=scrolling_times)
