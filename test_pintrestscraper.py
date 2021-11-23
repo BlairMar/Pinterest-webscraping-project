@@ -11,10 +11,11 @@ from collections import defaultdict
 import os.path
 import time
 import unittest
+driver = webdriver.Chrome(ChromeDriverManager().install()) 
+webdriver.Chrome('/Users/danielzakaiem/Downloads/chromedriver')
 
-driver = webdriver.Chrome(ChromeDriverManager().install()) #########
-webdriver.Chrome('/Users/danielzakaiem/Downloads/chromedriver')######### added so that now the new chromedriver version is running 
-
+import unittest.mock  ######
+from unittest.mock import patch########
 
 
 class PinterestScraperTestCase(unittest.TestCase):
@@ -36,69 +37,69 @@ class PinterestScraperTestCase(unittest.TestCase):
         '''
             # we will be testing the scraper with these specific attributes:(ie:this instance of the class will be getting tested)
         self.pinterest_scraper = pinterestScraper.PinterestScraper('https://www.pinterest.co.uk/ideas/') #creating an instance with inserting a root 
-    
+        
     def tearDown (self):
         self.pinterest_scraper.driver.close()  #after each unittest, we close the instance of the class
 
-    def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
-        '''
-        This funtion is used to see if a dictionary is created
-        '''
-        test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
-        self.assertIsInstance(test_dict, dict) #test if output is dictionary
+#     def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
+#         '''
+#         This funtion is used to see if a dictionary is created
+#         '''
+#         test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+#         self.assertIsInstance(test_dict, dict) #test if output is dictionary
 
-    def test_get_category_links(self):
-         '''
-         This function is used to test if correct links are retreived
-         '''
-         test_href_links = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')  # outputs an enumerated dictionary of the href links
+#     def test_get_category_links(self):
+#          '''
+#          This function is used to test if correct links are retreived
+#          '''
+#          test_href_links = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')  # outputs an enumerated dictionary of the href links
         
-         hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
-                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
-                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
+#          hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
+#                                        '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
+#                                        '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
                                        
-         hand_picked_category_hrefs = []
-         for xpath in hand_picked_category_xpaths:
-             hand_picked_category_hrefs.append(self.pinterest_scraper.driver.find_element_by_xpath(xpath).get_attribute('href'))
-         counter = 0
-         for ele in hand_picked_category_hrefs:   
-            if ele in test_href_links.values():
-                counter +=1
-                print(counter)
-         self.assertEqual(counter, 3) # add self to all asserts
+#          hand_picked_category_hrefs = []
+#          for xpath in hand_picked_category_xpaths:
+#              hand_picked_category_hrefs.append(self.pinterest_scraper.driver.find_element_by_xpath(xpath).get_attribute('href'))
+#          counter = 0
+#          for ele in hand_picked_category_hrefs:   
+#             if ele in test_href_links.values():
+#                 counter +=1
+#                 print(counter)
+#          self.assertEqual(counter, 3) # add self to all asserts
 
-    def test_print_options(self):
-        '''
-        This function tests if the entire method is run
-        '''
-        category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') #using output of last func for input of this function
-        test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
-        print (test_available_categories) 
-        self.assertEqual('success', test_available_categories) # ascertains that the entire function actually ran2
+#     def test_print_options(self):
+#         '''
+#         This function tests if the entire method is run
+#         '''
+#         category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') #using output of last func for input of this function
+#         test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
+#         print (test_available_categories) 
+#         self.assertEqual('success', test_available_categories) # ascertains that the entire function actually ran
 
-   # #new    
-    # def test_catgories_to_save_imgs (self):  # ADDED THIS AS A NEW TEST FOR THIS COMMIT   
-    #     pass                   
+#    # #new    
+#     # def test_catgories_to_save_imgs (self):  # ADDED THIS AS A NEW TEST FOR THIS COMMIT   
+#     #     pass                   
 
-    # #new 
-    def test_get_user_input (self): 
+#     # #new 
+#     def test_get_user_input (self): 
      
 
-        #I WAS WRONG - THE FUNCTION THROWS AN ERROR IF 'THERE IS NOT THE SAME VALUE FOR 'CATEGORY_NUMBER' AND NO OF KEYS IN DICTIONARY
-        # ^ this means i would have to purposelfy type in a number> than no available to see if error comes
-        test_category_link_dict = {1: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/', 2: 'https://www.pinterest.co.uk/ideas/holidays/910319220330/', 3: 'https://www.pinterest.co.uk/ideas/animals/925056443165/', 4: 'https://www.pinterest.co.uk/ideas/architecture/918105274631/', 5: 'https://www.pinterest.co.uk/ideas/art/961238559656/', 6: 'https://www.pinterest.co.uk/ideas/beauty/935541271955/', 7: 'https://www.pinterest.co.uk/ideas/design/902065567321/', 8: 'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 9: 'https://www.pinterest.co.uk/ideas/education/922134410098/', 10: 'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 11: 'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 12: 'https://www.pinterest.co.uk/ideas/finance/913207199297/', 13: 'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/', 14: 'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/', 15: 'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 16: 'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 17: 'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 18: 'https://www.pinterest.co.uk/ideas/tattoos/922203297757/', 19: 'https://www.pinterest.co.uk/ideas/travel/908182459161/', 20: 'https://www.pinterest.co.uk/ideas/vehicles/918093243960/', 21: 'https://www.pinterest.co.uk/ideas/weddings/903260720461/', 22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/', 23: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/'}  
-        test = self.pinterest_scraper._get_user_input(test_category_link_dict) 
-        self.assertRaises(Exception, test)
+#         #I WAS WRONG - THE FUNCTION THROWS AN ERROR IF 'THERE IS NOT THE SAME VALUE FOR 'CATEGORY_NUMBER' AND NO OF KEYS IN DICTIONARY
+#         # ^ this means i would have to purposelfy type in a number> than no available to see if error comes
+#         test_category_link_dict = {1: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/', 2: 'https://www.pinterest.co.uk/ideas/holidays/910319220330/', 3: 'https://www.pinterest.co.uk/ideas/animals/925056443165/', 4: 'https://www.pinterest.co.uk/ideas/architecture/918105274631/', 5: 'https://www.pinterest.co.uk/ideas/art/961238559656/', 6: 'https://www.pinterest.co.uk/ideas/beauty/935541271955/', 7: 'https://www.pinterest.co.uk/ideas/design/902065567321/', 8: 'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 9: 'https://www.pinterest.co.uk/ideas/education/922134410098/', 10: 'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 11: 'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 12: 'https://www.pinterest.co.uk/ideas/finance/913207199297/', 13: 'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/', 14: 'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/', 15: 'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 16: 'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 17: 'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 18: 'https://www.pinterest.co.uk/ideas/tattoos/922203297757/', 19: 'https://www.pinterest.co.uk/ideas/travel/908182459161/', 20: 'https://www.pinterest.co.uk/ideas/vehicles/918093243960/', 21: 'https://www.pinterest.co.uk/ideas/weddings/903260720461/', 22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/', 23: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/'}  
+#         test = self.pinterest_scraper._get_user_input(test_category_link_dict) 
+#         self.assertRaises(Exception, test)
             
-    # I HAVE FOUND THAT '_get_category_link_dict is (   but i repeated one and added to key 23 just for test purposes):
-   # {1: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/', 2: 'https://www.pinterest.co.uk/ideas/holidays/910319220330/', 3: 'https://www.pinterest.co.uk/ideas/animals/925056443165/', 4: 'https://www.pinterest.co.uk/ideas/architecture/918105274631/', 5: 'https://www.pinterest.co.uk/ideas/art/961238559656/', 6: 'https://www.pinterest.co.uk/ideas/beauty/935541271955/', 7: 'https://www.pinterest.co.uk/ideas/design/902065567321/', 8: 'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 9: 'https://www.pinterest.co.uk/ideas/education/922134410098/', 10: 'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 11: 'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 12: 'https://www.pinterest.co.uk/ideas/finance/913207199297/', 13: 'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/', 14: 'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/', 15: 'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 16: 'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 17: 'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 18: 'https://www.pinterest.co.uk/ideas/tattoos/922203297757/', 19: 'https://www.pinterest.co.uk/ideas/travel/908182459161/', 20: 'https://www.pinterest.co.uk/ideas/vehicles/918093243960/', 21: 'https://www.pinterest.co.uk/ideas/weddings/903260720461/', 22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/', 23: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/'}
+#     # I HAVE FOUND THAT '_get_category_link_dict is (   but i repeated one and added to key 23 just for test purposes):
+#    # {1: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/', 2: 'https://www.pinterest.co.uk/ideas/holidays/910319220330/', 3: 'https://www.pinterest.co.uk/ideas/animals/925056443165/', 4: 'https://www.pinterest.co.uk/ideas/architecture/918105274631/', 5: 'https://www.pinterest.co.uk/ideas/art/961238559656/', 6: 'https://www.pinterest.co.uk/ideas/beauty/935541271955/', 7: 'https://www.pinterest.co.uk/ideas/design/902065567321/', 8: 'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 9: 'https://www.pinterest.co.uk/ideas/education/922134410098/', 10: 'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 11: 'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 12: 'https://www.pinterest.co.uk/ideas/finance/913207199297/', 13: 'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/', 14: 'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/', 15: 'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 16: 'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 17: 'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 18: 'https://www.pinterest.co.uk/ideas/tattoos/922203297757/', 19: 'https://www.pinterest.co.uk/ideas/travel/908182459161/', 20: 'https://www.pinterest.co.uk/ideas/vehicles/918093243960/', 21: 'https://www.pinterest.co.uk/ideas/weddings/903260720461/', 22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/', 23: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/'}
     
      
 
-     #test the entire function runsL
-    def test_get_user_input (self):
-        test_category_link_dict = {1: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/', 2: 'https://www.pinterest.co.uk/ideas/holidays/910319220330/', 3: 'https://www.pinterest.co.uk/ideas/animals/925056443165/', 4: 'https://www.pinterest.co.uk/ideas/architecture/918105274631/', 5: 'https://www.pinterest.co.uk/ideas/art/961238559656/', 6: 'https://www.pinterest.co.uk/ideas/beauty/935541271955/', 7: 'https://www.pinterest.co.uk/ideas/design/902065567321/', 8: 'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 9: 'https://www.pinterest.co.uk/ideas/education/922134410098/', 10: 'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 11: 'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 12: 'https://www.pinterest.co.uk/ideas/finance/913207199297/', 13: 'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/', 14: 'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/', 15: 'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 16: 'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 17: 'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 18: 'https://www.pinterest.co.uk/ideas/tattoos/922203297757/', 19: 'https://www.pinterest.co.uk/ideas/travel/908182459161/', 20: 'https://www.pinterest.co.uk/ideas/vehicles/918093243960/', 21: 'https://www.pinterest.co.uk/ideas/weddings/903260720461/', 22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/'}  
-        test = self.pinterest_scraper._get_user_input(test_category_link_dict)
+#      #test the entire function runsL
+#     def test_get_user_input (self):
+#         test_category_link_dict = {1: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/', 2: 'https://www.pinterest.co.uk/ideas/holidays/910319220330/', 3: 'https://www.pinterest.co.uk/ideas/animals/925056443165/', 4: 'https://www.pinterest.co.uk/ideas/architecture/918105274631/', 5: 'https://www.pinterest.co.uk/ideas/art/961238559656/', 6: 'https://www.pinterest.co.uk/ideas/beauty/935541271955/', 7: 'https://www.pinterest.co.uk/ideas/design/902065567321/', 8: 'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 9: 'https://www.pinterest.co.uk/ideas/education/922134410098/', 10: 'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 11: 'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 12: 'https://www.pinterest.co.uk/ideas/finance/913207199297/', 13: 'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/', 14: 'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/', 15: 'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 16: 'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 17: 'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 18: 'https://www.pinterest.co.uk/ideas/tattoos/922203297757/', 19: 'https://www.pinterest.co.uk/ideas/travel/908182459161/', 20: 'https://www.pinterest.co.uk/ideas/vehicles/918093243960/', 21: 'https://www.pinterest.co.uk/ideas/weddings/903260720461/', 22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/'}  
+#         test = self.pinterest_scraper._get_user_input(test_category_link_dict)
 
     #new
     # def test_interior_cloud_save_loop (self):
@@ -112,8 +113,21 @@ class PinterestScraperTestCase(unittest.TestCase):
 
 
     # #new
-    # def test__initialise_counter_and_local_folders (self):
-    #     pass
+    # @patch('os.makedirs')   #using this decorater to make sure that 'os.makedirs' is used in the method (which is imported from os)
+    # def test_initialise_counter_and_local_folders (mock_system):
+    #     # os.makedirs()
+    #     mock_system.assert_called()
+
+    def test_initialise_counter_and_local_folders (self): #AttributeError: 'PinterestScraper' object has no attribute 'selected_category_names'- yet again- error as the vriable is defined only in the scraper
+            #^well, this was an error- solution- instead of self.selected_category_names defined as attribute within 
+            # running the class methods (NOT right at the start), i had taken away self, and placed it as an input to the method 
+        
+        test = self.pinterest_scraper._initialise_counter_and_local_folders('/Users/danielzakaiem/Downloads', 'Animals') #have i typed in a correct path?
+        test 
+        
+    
+
+        
     
 
     # #new

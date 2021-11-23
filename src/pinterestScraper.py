@@ -275,7 +275,7 @@ class PinterestScraper:
         end = time.time()
         print (f'It had taken {end - start} seconds to run this save_to_cloud_or_local method') 
     
-    def _initialise_counter_and_local_folders(self, directory_path) -> None:
+    def _initialise_counter_and_local_folders(self, directory_path, selected_category_names) -> None:
         start = time.time()
         ''' Defines a function which initialises the counter dict with the categories selected for the current run and folders for
             local saves. 
@@ -286,7 +286,7 @@ class PinterestScraper:
 
         self.root_save_path = directory_path
 
-        for category in self.selected_category_names:
+        for category in selected_category_names:
             self.counter_dict[f'{category}'] = 0
             # Create a folder named data to store a folder for each category
             if not os.path.exists(f'{self.root_save_path}'):
