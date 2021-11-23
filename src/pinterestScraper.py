@@ -1,3 +1,4 @@
+from typing import Union
 from selenium import webdriver
 from time import sleep
 import urllib.request
@@ -7,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 from tqdm import tqdm
@@ -47,8 +48,8 @@ class PinterestScraper:
         self.category = None
         self.category_image_count = defaultdict(int)
         self.root = root
-        self.driver = webdriver.Chrome()
-        # self.driver = webdriver.Chrome(ChromeDriverManager().install())
+        # self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.image_set = set()
         self.category_link_dict = []
         self.save_path = None
@@ -109,7 +110,7 @@ class PinterestScraper:
         category_link_dict: dict
         """
         print(f"\n The options (Total {len(category_link_dict)})  are:")
-        for idx, category in self.category_link_dict.items(): # Print all categories available on the route page
+        for idx, category in category_link_dict.items(): # Print all categories available on the route page
             print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
 
     def _catgories_to_save_imgs(self) -> None:
@@ -206,7 +207,7 @@ Enter your answer as a comma separated list: ').upper()
         self.selected_category_names = [category.split('/')[4] for category in self.selected_category.values()]
         print(f"Categories selected: {self.selected_category_names}")
 
-    def _interior_cloud_save_loop(self, remote) -> None or str:
+    def _interior_cloud_save_loop(self, remote) -> Union[None, str]:
 
         ''' Defines the interior loop of the cloud save function. Would all have been in one function but I needed to repeat
             this section of code if the user made an error entering their bucket name. 
@@ -220,7 +221,8 @@ Enter your answer as a comma separated list: ').upper()
             self.s3_bucket = input('\nPlease enter the name of your desired S3 bucket. ')
             go_on = ''
             while go_on != 'Y' and go_on != 'N':
-                go_on = input(f'\nYou have enetered {self.s3_bucket} as your s3 bucket. Is this correct? Y or N: ').upper()
+                go_on = input(f'\nYou have enetered {self.s3_bucket} as your s3 bucket. \
+                    Is this correct? Y or N: ').upper()
                 if go_on == 'Y':
                     print('A = All categories: ')
                     upload_check = ['A']
@@ -230,8 +232,8 @@ Enter your answer as a comma separated list: ').upper()
                     while True:
                         try:
                             all_or_some = input('\nWhich categories would you like to download \
-to this bucket?\nPlease enter your choice as a comma separated \
-list. ').upper()
+                            to this bucket?\nPlease enter your choice as a comma separated \
+                            list. ').upper()
                             all_or_some = (all_or_some.replace(' ', '')).split(',')
                             print(all_or_some)
                             repeat_check = []
@@ -789,7 +791,9 @@ list. ').upper()
         self._initialise_counter()
         self._initialise_local_folders('../data')
         self._check_for_logs()     
-        self._grab_images_src(n_scrolls=1)
+        scrolling_times = int(input('\nHow many times to scroll each page \
+        (~5 to 10 images per category.)?: '))
+        self._grab_images_src(n_scrolls=scrolling_times)
         self._grab_page_data()
         self._data_dump()
         self._create_log()
