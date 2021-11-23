@@ -51,7 +51,6 @@ class PinterestScraper:
         self._driver = webdriver.Chrome()
         # self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._image_set = set()
-        self._category_link_dict = []
         self._save_path = None
         self._link_set = set()
         self._log = set()
@@ -99,9 +98,7 @@ class PinterestScraper:
             )
         categories = container.find_elements_by_xpath('.//a')
         # Extract the href
-        self._category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
-
-        return self._category_link_dict
+        return {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
 
     def _print_options(self, category_link_dict: dict):
         """Print all categories available on the homepage
@@ -110,11 +107,12 @@ class PinterestScraper:
         ---------------------
         category_link_dict: dict
         """
-        print(f"\n The options (Total {len(category_link_dict)})  are:")
+        print(f"\n The options (Total {len(category_link_dict)}) are:")
 
         # Print all categories available on the route page
         for idx, category in category_link_dict.items():
             print(f"\t {idx}: {category.replace(self._root, '').split('/')[0]}")
+        # Is a return needed here to test?
 
     def _categories_to_save_imgs(self, selected_category_names) -> None:
 
@@ -269,6 +267,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             print('\nAll data will be stored on your local machine. ')
         else:
             print('\nYour selection was not valid, please choose again. ')
+            return ''
 
     def _save_to_cloud_or_local(self) -> None:
 
@@ -746,9 +745,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._driver.get(link)
             self._grab_all_users_and_counts()
             self._main_dict[f"{self._category}"][f"{self._category}_{self._counter_dict[self._category]}"] = self._current_dict
-
-
-
         
     def _data_dump(self) -> None:
 
