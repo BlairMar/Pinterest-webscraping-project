@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List, Set
 from selenium import webdriver
 from time import sleep
 import urllib.request
@@ -104,20 +104,22 @@ class PinterestScraper:
 
     def _print_options(self, category_link_dict: dict):
         """Print all categories available on the homepage
-        
+
         Args
         ---------------------
         category_link_dict: dict
         """
         print(f"\n The options (Total {len(category_link_dict)})  are:")
-        for idx, category in category_link_dict.items(): # Print all categories available on the route page
+        # Print all categories available on the route page
+        for idx, category in category_link_dict.items():
             print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
 
-    def _catgories_to_save_imgs(self) -> None:
+    def _categories_to_save_imgs(self) -> None:
 
         get_any = ''
         while get_any != 'N' and get_any != 'Y':
-            get_any = input('\nWould you like to download images for any of the selected categories? Y or N: ').upper()
+            get_any = input('\nWould you like to download images for \
+any of the selected categories? Y or N: ').upper()
             if get_any == 'Y':
                 print('A = All categories: ')
                 download_check = ['A']
@@ -125,9 +127,9 @@ class PinterestScraper:
                     print(f'{index + 1} = {category}')
                     download_check.append(str(index + 1))
                 while True:
-                    try: 
-                        downloads = input(f'\nPlease select which categories you would like to download images for.\n\
-Enter your answer as a comma separated list: ').upper()
+                    try:
+                        downloads = input('\nPlease select which categories you would \
+like to download images for.\nEnter your answer as a comma separated list: ').upper()
                         downloads = (downloads.replace(' ', '')).split(',')
                         repeat_check = []
                         for option in downloads:
@@ -156,7 +158,7 @@ Enter your answer as a comma separated list: ').upper()
                 print('\nCategory image error, Luke, debug it... ')
 
 
-    def _get_user_input(self, category_link_dict: dict):  
+    def _get_user_input(self, category_link_dict: dict) -> List[str]:  
         """Let user decide how many and which categories to download
         
         Args
@@ -164,8 +166,9 @@ Enter your answer as a comma separated list: ').upper()
         category_link_dict: dict
         """
         while True:
-            try:    
-                categories_num = int(input(f"\nHow many categories of images do you wish to grab? 1 to {len(category_link_dict)}: \n"))
+            try:
+                categories_num = int(input(f"\nHow many categories of images\
+do you wish to grab? 1 to {len(category_link_dict)}: \n"))
                 assert 0 < categories_num <= len(category_link_dict)
                 break
             except:  
@@ -180,13 +183,15 @@ Enter your answer as a comma separated list: ').upper()
                 choices = []
                 check_list = [str(x+1) for x in range(len(category_link_dict))]
                 while len(choices) != categories_num:
-                    choices = input(f"\nPlease select your desired categories. Separate your choices by commas: You have {categories_num} choice(s) to make. ")
+                    choices = input(f"\nPlease select your desired categories. \
+Separate your choices by commas. You have {categories_num} choice(s) to make: ")
                     choices = (choices.replace(' ', '')).split(',')
                     print(choices)
                     for choice in choices:
                         if choice not in check_list:
                             choices = []
-                            print(f'\nPlease only enter integers in a comma separated list. Values between 1 and {len(category_link_dict)}. ') 
+                            print(f'\nPlease only enter integers in a comma separated \
+list. Values between 1 and {len(category_link_dict)}: ') 
                             break
                     if len(choices) == 0:
                         continue
@@ -206,6 +211,7 @@ Enter your answer as a comma separated list: ').upper()
 
         self.selected_category_names = [category.split('/')[4] for category in self.selected_category.values()]
         print(f"Categories selected: {self.selected_category_names}")
+        return self.selected_category_names
 
     def _interior_cloud_save_loop(self, remote) -> Union[None, str]:
 
@@ -233,7 +239,7 @@ Enter your answer as a comma separated list: ').upper()
                         try:
                             all_or_some = input('\nWhich categories would you like to download \
                             to this bucket?\nPlease enter your choice as a comma separated \
-                            list. ').upper()
+                            list: ').upper()
                             all_or_some = (all_or_some.replace(' ', '')).split(',')
                             print(all_or_some)
                             repeat_check = []
@@ -360,7 +366,8 @@ Enter your answer as a comma separated list: ').upper()
             for item in tqdm(os.listdir(f'../data/{save}')):
                 # Move any items from local to new remote bucket.
                 if fresh == 'Y':
-                    self.s3_client.upload_file(f'../data/{save}/{item}', self.s3_bucket, f'pinterest/{save}/{item}')
+                    self.s3_client.upload_file(f'../data/{save}/{item}', 
+                    self.s3_bucket, f'pinterest/{save}/{item}')
                 elif fresh == 'N':
                     pass
             # Delete old local file
@@ -551,6 +558,7 @@ Enter your answer as a comma separated list: ').upper()
             container = self.driver.find_element_by_xpath(dict_container)
             poster_element = container.find_element_by_xpath(dict_element)          
             self.current_dict["poster_name"] = poster_element.get_attribute('textContent')
+            # TODO:Replace the hard coded xpath
             follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
             followers = follower_element[-1].get_attribute('textContent')
             # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
@@ -560,7 +568,8 @@ Enter your answer as a comma separated list: ').upper()
             else:
                 self.current_dict["follower_count"] = followers.split()[0]
         except:
-            self.current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when trying to grab user info.'
+            self.current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when\
+            trying to grab user info.'
             print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
@@ -571,7 +580,7 @@ Enter your answer as a comma separated list: ').upper()
             Arguments: tag_container
             
             Returns: None '''
-
+        # TODO:Replace any hard coded xpath
         try:
             container = WebDriverWait(self.driver, 0.5).until(
                 EC.presence_of_element_located((By.XPATH, f'{tag_container}//div[@data-test-id="vase-carousel"]'))
@@ -636,7 +645,7 @@ Enter your answer as a comma separated list: ').upper()
             tabs to target to get info I need. Should be able to integrate later on
             in to one larger function which pulls for xpath dict. '''
         try: 
-            try:
+            try: # TODO: Remove hard coded xpath 
                 _ = WebDriverWait(self.driver, 1).until(
                         EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
                     )
@@ -662,7 +671,7 @@ Enter your answer as a comma separated list: ').upper()
                 self._download_image(self.current_dict["img_src"])
         except:
             self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
-            print('\nStory image grab error')
+            print('\nStory image grab error.')
 
     def _grab_all_users_and_counts(self) -> None:
 
@@ -723,6 +732,7 @@ Enter your answer as a comma separated list: ').upper()
             self.driver.get(self.current_link)
             self._grab_all_users_and_counts()
             self.main_dict[f"{self.category}"][f"{self.category}_{self.counter_dict[self.category]}"] = self.current_dict
+
         
     def _data_dump(self) -> None:
 
@@ -750,7 +760,7 @@ Enter your answer as a comma separated list: ').upper()
                     Key = f'pinterest/{name}/{name}.json'
                 )
 
-    def _create_log(self) -> None:
+    def _create_log(self) -> bool:
 
         ''' Defines a function which creates two logs. One of which logs pages visited as to not repeat
             the other a log of where the most recent save for each category is in order to update the
@@ -767,7 +777,7 @@ Enter your answer as a comma separated list: ').upper()
                 self.recent_save_dict = json.load(load)
         else:
             self.recent_save_dict = {}
-
+        # For each category, check if the images should be saved remotely or locally
         for category in tqdm(self.selected_category_names):
             if category in self.s3_list:
                 update = ['remote', self.s3_bucket]
@@ -775,9 +785,12 @@ Enter your answer as a comma separated list: ').upper()
                 update = 'local'
             self.recent_save_dict[category] = update
 
-        with open('../data/log.json', 'w') as log, open('../data/recent-save-log.json', 'w') as save:
+        with open('../data/log.json', 'w') as log, open('../data/recent-save-log.json', 'w') \
+        as save:
             json.dump(list(self.link_set), log)
             json.dump(self.recent_save_dict, save)
+
+        return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
 
     def get_category_data(self) -> None:
         """Grab all image links, then download all images
@@ -786,13 +799,17 @@ Enter your answer as a comma separated list: ').upper()
         sleep(0.75)
         self._print_options(category_link_dict)
         self._get_user_input(category_link_dict)
-        self._catgories_to_save_imgs()
+        self._categories_to_save_imgs()
         self._save_to_cloud_or_local()
         self._initialise_counter()
         self._initialise_local_folders('../data')
-        self._check_for_logs()     
-        scrolling_times = int(input('\nHow many times to scroll each page \
-        (~5 to 10 images per category.)?: '))
+        self._check_for_logs()
+        # TODO: May be add a while True
+        try:
+            scrolling_times = int(input('\nHow many times to scroll each page \
+(~5 to 10 images per category)?: '))
+        except:
+            raise Exception('Invalid input')
         self._grab_images_src(n_scrolls=scrolling_times)
         self._grab_page_data()
         self._data_dump()
