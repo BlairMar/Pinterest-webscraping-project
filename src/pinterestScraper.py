@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 from tqdm import tqdm
@@ -45,26 +45,26 @@ class PinterestScraper:
         xpath_dict: dict \n
         """
 
-        self.category = None
-        self.category_image_count = defaultdict(int)
-        self.root = root
-        # self.driver = webdriver.Chrome()
-        self.driver = webdriver.Chrome(ChromeDriverManager().install())
-        self.image_set = set()
-        self.category_link_dict = []
-        self.save_path = None
-        self.link_set = set()
-        self.log = set()
+        self._category = None
+        self._category_image_count = defaultdict(int)
+        self._root = root
+        self._driver = webdriver.Chrome()
+        # self._driver = webdriver.Chrome(ChromeDriverManager().install())
+        self._image_set = set()
+        self._category_link_dict = []
+        self._save_path = None
+        self._link_set = set()
+        self._log = set()
         # self.fresh_set = set() # No need to define as attribute if the set is used in only one class
-        self.s3_list = []
+        self._s3_list = []
         # self.current_run_categories = [] # Made redundant by self.selected_category_names
-        self.current_dict = {}
-        self.main_dict = {}
-        self.counter_dict = {} # A counter dict to order the data we grab from each page.
+        self._current_dict = {}
+        self._main_dict = {}
+        self._counter_dict = {} # A counter dict to order the data we grab from each page.
         # self.current_link = ''
         self._cat_imgs_to_save = {}
-        self.s3_client = boto3.client('s3')
-        self.xpath_dict = {
+        self._s3_client = boto3.client('s3')
+        self._xpath_dict = {
 
             'official_user_container': '//div[@data-test-id="official-user-attribution"]',
             'official_user_element': './/div[@class="tBJ dyH iFc yTZ pBj zDA IZT mWe CKL"]',
@@ -114,7 +114,7 @@ class PinterestScraper:
 
         # Print all categories available on the route page
         for idx, category in category_link_dict.items():
-            print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
+            print(f"\t {idx}: {category.replace(self._root, '').split('/')[0]}")
 
     def _categories_to_save_imgs(self, selected_category_names) -> None:
 
@@ -170,7 +170,7 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
 
         while True:
             try:
-                categories_num = int(input(f"\nHow many categories of images\
+                categories_num = int(input(f"\nHow many categories of images \
 do you wish to grab? 1 to {len(category_link_dict)}: \n"))
                 assert 0 < categories_num <= len(category_link_dict)
                 break
@@ -254,10 +254,10 @@ list. Values between 1 and {len(category_link_dict)}: ')
                                 assert option in upload_check
                             assert len(repeat_check) == len(set(repeat_check))
                             if 'A' in all_or_some:
-                                self.s3_list = self.selected_category_names
+                                self._s3_list = self.selected_category_names
                             else:
                                 for option in all_or_some:
-                                    self.s3_list.append(self.selected_category_names[int(option) - 1])
+                                    self._s3_list.append(self.selected_category_names[int(option) - 1])
                             break
                         except:
                             print('\nPlease only select options from the provided list. No duplicates. ')
@@ -301,28 +301,27 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         for category in selected_category_names:
             # Create a folder named data to store a folder for each category
-            if not os.path.exists(f'{self.root_save_path}'):
-                os.makedirs(f'{self.root_save_path}')
-            self.main_dict[f"{category}"] = {}
-            if category not in self.s3_list:
-                if not os.path.exists(f'{self.root_save_path}/{category}'):
-
+            if not os.path.exists(f'{self._root_save_path}'):
+                os.makedirs(f'{self._root_save_path}')
+            self._main_dict[f"{category}"] = {}
+            if category not in self._s3_list:
+                if not os.path.exists(f'{self._root_save_path}/{category}'):
                     print(f"\nCreating local folder : {category}")
                     os.makedirs(f'{self._root_save_path}/{category}')
 
     def _initialise_counter(self, selected_category_names) -> dict:
 
         for category in selected_category_names:
-            self.counter_dict[f'{category}'] = 0
+            self._counter_dict[f'{category}'] = 0
 
-        return self.counter_dict
+        return self._counter_dict
 
     def _delete_redundant_saves(self, save, recent_save, fresh) -> None:
 
         ''' Defines a function which will delete redundant files. '''
 
         # If save remote and new bucket same: pass
-        if save in self.s3_list and recent_save[save][0] == 'remote' \
+        if save in self._s3_list and recent_save[save][0] == 'remote' \
         and recent_save[save][1] == self.s3_bucket:
             # If user wants to start anew, still need to delete old data.
             if fresh == 'N':
@@ -330,7 +329,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 bucket = s3.Bucket(recent_save[save][1])
                 bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
         # If save remote and new bucket diff: move and delete
-        elif save in self.s3_list and recent_save[save][0] == 'remote' \
+        elif save in self._s3_list and recent_save[save][0] == 'remote' \
         and recent_save[save][1] != self.s3_bucket:
             s3 = boto3.resource('s3')
             src_bucket = s3.Bucket(recent_save[save][1])
@@ -350,7 +349,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     # Delete old file.
                     src.delete()
         # If save remote and no new bucket: move local and delete
-        elif save not in self.s3_list and recent_save[save][0] == 'remote':
+        elif save not in self._s3_list and recent_save[save][0] == 'remote':
             s3 = boto3.resource('s3')
             src_bucket = s3.Bucket(recent_save[save][1])
             print('Moving saved files to specified location: ')
@@ -364,20 +363,20 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     # Delete old remote file.
                     src.delete()
         # If save local and new save local: pass
-        elif save not in self.s3_list and recent_save[save] == 'local':
+        elif save not in self._s3_list and recent_save[save] == 'local':
             # If user wants to start anew, still need to delete old data.
             if fresh == 'N':
                 print('Removing old save data: ')
                 for item in tqdm(os.listdir(f'../data/{save}')):
                     os.remove(f'../data/{save}/{item}')
         # If save local and new save remote: move and delete
-        elif save in self.s3_list and recent_save[save] == 'local':
+        elif save in self._s3_list and recent_save[save] == 'local':
             s3 = boto3.resource('s3')
             print('Moving saved files to specified location: ')
             for item in tqdm(os.listdir(f'../data/{save}')):
                 # Move any items from local to new remote bucket.
                 if fresh == 'Y':
-                    self.s3_client.upload_file(f'../data/{save}/{item}', 
+                    self._s3_client.upload_file(f'../data/{save}/{item}', 
                     self.s3_bucket, f'pinterest/{save}/{item}')
                 elif fresh == 'N':
                     pass
@@ -387,7 +386,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             print('No recent-save-log.json file present. ')
         else: 
             print('Missed a scenario in _delete_redundant_saves. ')
-            self.driver.quit()
+            self._driver.quit()
 
     ''' There will be an error when saying no to continuing from save file. 
         Need to make it so that when I say no, file is just deleted, not moved.'''
@@ -405,7 +404,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             Something like:
             
                 for save in saves:
-                    if old_save_location != new_save_location: # Check new_save_location by self.s3_list
+                    if old_save_location != new_save_location: # Check new_save_location by self._s3_list
                         copy all data from old save to new save        and self.s3_bucket
                         make sure all data is in the correct dict
                         delete old save.
@@ -416,7 +415,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             In order to get this:
                 - When user says they want to save to bucket, save bucket as bucket. Will have self.bucket anyway.
                 - If not self.bucket then new_save_loc = local.
-                - If self.bucket then for each category in self.s3_list and in saves, new_save_loc = [remote, s3_bucket]
+                - If self.bucket then for each category in self._s3_list and in saves, new_save_loc = [remote, s3_bucket]
                   else: new_save_loc = local '''
 
         if os.path.exists('../data/recent-save-log.json'):
@@ -436,24 +435,23 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 while fresh != 'Y' and fresh != 'N':
                     fresh = input('\nWould you like to add to your existing data? Y or N: ').upper()
                     if fresh == 'Y':
-
-                        self.link_set = set(tuples_content)
-                        self.log = set(tuples_content)
+                        self._link_set = set(tuples_content)
+                        self._log = set(tuples_content)
                         for cat, href in tuples_content:
                             category = cat.split('/')[0]
                             if category in self.selected_category_names:
-                                self.counter_dict[category] += 1
+                                self._counter_dict[category] += 1
                         for save in saves:
                             if recent_saves[save] == 'local':
                                 with open(f'../data/{save}/{save}.json', 'r') as load:
-                                    self.main_dict[f'{save}'] = json.load(load)
+                                    self._main_dict[f'{save}'] = json.load(load)
                                 # shutil.rmtree(f'../data/{save}')
                             elif recent_saves[save][0] == 'remote':
-                                obj = self.s3_client.get_object(
+                                obj = self._s3_client.get_object(
                                     Bucket = recent_saves[save][1],
                                     Key = (f'pinterest/{save}/{save}.json')
                                 ) 
-                                self.main_dict[f'{save}'] = json.loads(obj['Body'].read())
+                                self._main_dict[f'{save}'] = json.loads(obj['Body'].read())
                                 # s3 = boto3.resource('s3')
                                 # bucket = s3.Bucket(recent_saves[save][1])
                                 # bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
@@ -463,8 +461,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                             self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
                     elif fresh == 'N':
                         tuples_content = [item for item in tuples_content if item[0].split('/')[0] not in saves]
-                        self.link_set = set(tuples_content)
-                        self.log = set(tuples_content)
+                        self._link_set = set(tuples_content)
+                        self._log = set(tuples_content)
                         for save in saves:
                             self._delete_redundant_saves(save = save, 
                             recent_save = recent_saves, fresh = fresh)
@@ -481,8 +479,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                         # self.link_set = set(tuples_content)
                         print('\nPlease re-enter your input. ')
             else:
-                self.link_set = set(tuples_content)
-                self.log = set(tuples_content)
+                self._link_set = set(tuples_content)
+                self._log = set(tuples_content)
                 print("Previous saves detected: None relate to this data collection run. ")
 
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
@@ -508,7 +506,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 link_list = container.find_elements_by_xpath(elements_xpath)
                 print(f"\nNumber of images successfully extracted: {len(link_list)}")
                 self._link_set.update([(self._category, link.get_attribute('href')) for link in link_list])
-                print(f"\nNumber of uniques images: {len(self._link_set)}")
+                print(f"\nNumber of uniques images: {len(self._link_set) - len(self._log)}")
             except: 
                 print('\nSome errors occurred, most likely due to no images present')
 
@@ -572,10 +570,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
         try:
             container = self._driver.find_element_by_xpath(dict_container)
             poster_element = container.find_element_by_xpath(dict_element)          
-
-            self.current_dict["poster_name"] = poster_element.get_attribute('textContent')
+            self._current_dict["poster_name"] = poster_element.get_attribute('textContent')
             # TODO: Replace the hard coded xpath
-
             follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
             followers = follower_element[-1].get_attribute('textContent')
             # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
@@ -586,7 +582,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 self._current_dict["follower_count"] = followers.split()[0]
         except:
 
-            self.current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when\
+            self._current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when\
             trying to grab user info.'
 
             print('User Info Error')
@@ -622,12 +618,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     # print(f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     sleep(0.5)
-
-                    self.s3_client.upload_file(
-                        f'{tempdir}/{self.category}_{self.counter_dict[self.category]}.jpg', self.s3_bucket, 
-                        f'pinterest/{self.category}/{self.category}_{self.counter_dict[self.category]}.jpg')
-
-
+                    self._s3_client.upload_file(
+                        f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg', self.s3_bucket, 
+                        f'pinterest/{self._category}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     sleep(0.5)
 
     def _grab_image_src(self) -> None:
@@ -642,9 +635,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             Returns: None '''
         try:
             try: # Need this try statement to see if image in an image or other media type.
-
-                image_element = WebDriverWait(self.driver, 1).until(
-
+                image_element = WebDriverWait(self._driver, 1).until(
                     EC.presence_of_element_located((By.XPATH, '//div[@data-test-id="pin-closeup-image"]//img'))
                 )
                 self._current_dict["is_image_or_video"] = 'image'
@@ -668,10 +659,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
             tabs to target to get info I need. Should be able to integrate later on
             in to one larger function which pulls for xpath dict. '''
         try: 
-
             try: # TODO: Remove hard coded xpath 
-                _ = WebDriverWait(self.driver, 1).until(
-
+                _ = WebDriverWait(self._driver, 1).until(
                         EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
                     )
                 image_container = self._driver.find_element_by_xpath('//div[@aria-label="Story Pin image"]')
@@ -695,8 +684,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 self._current_dict["img_src"] = video_container.get_attribute('poster')
                 self._download_image(self._current_dict["img_src"])
         except:
-
-            self.current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
+            self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
             print('\nStory image grab error.')
 
 
@@ -749,17 +737,16 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         # category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
 
-
-        fresh_set = self.link_set.difference(self.log)
-
+        fresh_set = self._link_set.difference(self._log)
         for (cat, link) in tqdm(list(fresh_set)):
-            self.category = cat.split("/")[0]
-            self.counter_dict[f"{self.category}"] += 1
-            self.current_dict = {}
+            self._category = cat.split("/")[0]
+            self._counter_dict[f"{self._category}"] += 1
+            self._current_dict = {}
             # self.current_link = link Use link directly
-            self.driver.get(link)
+            self._driver.get(link)
             self._grab_all_users_and_counts()
-            self.main_dict[f"{self.category}"][f"{self.category}_{self.counter_dict[self.category]}"] = self.current_dict
+            self._main_dict[f"{self._category}"][f"{self._category}_{self._counter_dict[self._category]}"] = self._current_dict
+
 
 
         
@@ -779,15 +766,13 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         print('Dumping Data: ')
         for name in tqdm(self.selected_category_names):
-            if name not in self.s3_list:
-
+            if name not in self._s3_list:
                 with open(f'{name}/{name}.json', 'w') as loading:
                     json.dump(self._main_dict[f"{name}"], loading)
             else: # Remotely
                 # Changed the upload to s3 as the json file was acting strange, this makes it readable.
-
-                self.s3_client.put_object(
-                    Body = json.dumps(self.main_dict[f'{name}']), 
+                self._s3_client.put_object(
+                    Body = json.dumps(self._main_dict[f'{name}']), 
                     Bucket = self.s3_bucket,
 
                     Key = f'pinterest/{name}/{name}.json'
@@ -813,7 +798,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self.recent_save_dict = {}
         # For each category, check if the images should be saved remotely or locally
         for category in tqdm(self.selected_category_names):
-            if category in self.s3_list:
+            if category in self._s3_list:
                 update = ['remote', self.s3_bucket]
 
             else:
@@ -822,8 +807,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         with open('../data/log.json', 'w') as log, open('../data/recent-save-log.json', 'w') \
         as save:
-            json.dump(list(self.link_set), log)
-
+            json.dump(list(self._link_set), log)
             json.dump(self.recent_save_dict, save)
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
@@ -844,14 +828,14 @@ list. Values between 1 and {len(category_link_dict)}: ')
         # TODO: May be add a while True
         try:
             scrolling_times = int(input('\nHow many times to scroll through each page \
-(~5 to 10 images on average per category)?: '))
+(~5 to 10 images on average per scroll)?: '))
         except:
             raise Exception('Invalid input')
         self._grab_images_src(n_scrolls=scrolling_times)
         self._grab_page_data()
         self._data_dump()
         log_created = self._create_log()
-        self.driver.quit()
+        self._driver.quit()
         print('Done and done!')
         self._driver.quit()
 
