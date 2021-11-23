@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 from tqdm import tqdm
@@ -48,8 +48,8 @@ class PinterestScraper:
         self._category = None
         self._category_image_count = defaultdict(int)
         self._root = root
-        # self.driver = webdriver.Chrome()
-        self._driver = webdriver.Chrome(ChromeDriverManager().install())
+        self._driver = webdriver.Chrome()
+        # self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._image_set = set()
         self._category_link_dict = []
         self._save_path = None
@@ -306,7 +306,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._main_dict[f"{category}"] = {}
             if category not in self._s3_list:
                 if not os.path.exists(f'{self._root_save_path}/{category}'):
-
                     print(f"\nCreating local folder : {category}")
                     os.makedirs(f'{self._root_save_path}/{category}')
 
@@ -436,7 +435,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 while fresh != 'Y' and fresh != 'N':
                     fresh = input('\nWould you like to add to your existing data? Y or N: ').upper()
                     if fresh == 'Y':
-
                         self._link_set = set(tuples_content)
                         self._log = set(tuples_content)
                         for cat, href in tuples_content:
@@ -572,10 +570,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
         try:
             container = self._driver.find_element_by_xpath(dict_container)
             poster_element = container.find_element_by_xpath(dict_element)          
-
             self._current_dict["poster_name"] = poster_element.get_attribute('textContent')
             # TODO: Replace the hard coded xpath
-
             follower_element =  container.find_elements_by_xpath('.//div[@class="tBJ dyH iFc yTZ pBj zDA IZT swG"]')
             followers = follower_element[-1].get_attribute('textContent')
             # If statement is needed as if there is no associated text I cannot use .split to grab only the value.
@@ -622,12 +618,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     # print(f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     sleep(0.5)
-
                     self._s3_client.upload_file(
                         f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg', self.s3_bucket, 
                         f'pinterest/{self._category}/{self._category}_{self._counter_dict[self._category]}.jpg')
-
-
                     sleep(0.5)
 
     def _grab_image_src(self) -> None:
@@ -642,9 +635,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             Returns: None '''
         try:
             try: # Need this try statement to see if image in an image or other media type.
-
                 image_element = WebDriverWait(self._driver, 1).until(
-
                     EC.presence_of_element_located((By.XPATH, '//div[@data-test-id="pin-closeup-image"]//img'))
                 )
                 self._current_dict["is_image_or_video"] = 'image'
@@ -668,10 +659,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
             tabs to target to get info I need. Should be able to integrate later on
             in to one larger function which pulls for xpath dict. '''
         try: 
-
             try: # TODO: Remove hard coded xpath 
                 _ = WebDriverWait(self._driver, 1).until(
-
                         EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Story Pin image"]'))
                     )
                 image_container = self._driver.find_element_by_xpath('//div[@aria-label="Story Pin image"]')
@@ -695,7 +684,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 self._current_dict["img_src"] = video_container.get_attribute('poster')
                 self._download_image(self._current_dict["img_src"])
         except:
-
             self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
             print('\nStory image grab error.')
 
@@ -749,9 +737,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         # category_link_dict = self._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
 
-
         fresh_set = self._link_set.difference(self._log)
-
         for (cat, link) in tqdm(list(fresh_set)):
             self._category = cat.split("/")[0]
             self._counter_dict[f"{self._category}"] += 1
@@ -760,6 +746,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._driver.get(link)
             self._grab_all_users_and_counts()
             self._main_dict[f"{self._category}"][f"{self._category}_{self._counter_dict[self._category]}"] = self._current_dict
+
 
 
         
@@ -780,12 +767,10 @@ list. Values between 1 and {len(category_link_dict)}: ')
         print('Dumping Data: ')
         for name in tqdm(self.selected_category_names):
             if name not in self._s3_list:
-
                 with open(f'{name}/{name}.json', 'w') as loading:
                     json.dump(self._main_dict[f"{name}"], loading)
             else: # Remotely
                 # Changed the upload to s3 as the json file was acting strange, this makes it readable.
-
                 self._s3_client.put_object(
                     Body = json.dumps(self._main_dict[f'{name}']), 
                     Bucket = self.s3_bucket,
@@ -823,7 +808,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
         with open('../data/log.json', 'w') as log, open('../data/recent-save-log.json', 'w') \
         as save:
             json.dump(list(self._link_set), log)
-
             json.dump(self.recent_save_dict, save)
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
