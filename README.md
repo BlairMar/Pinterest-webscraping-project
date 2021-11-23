@@ -17,7 +17,7 @@ The contributors of this project are:
 | Luke Gardiner | Luke.gardiner.95@gmail.com |
 | Daniel Zakaiem | danielzakaiem@yahoo.co.uk |
 
-Our supervisor and instructor for this project is *Blair Martin* (\<email>).
+Our supervisor and instructor for this project is *Blair Martin* (blair@theaicore.com).
 
 ## Libraries to install 📚
 
