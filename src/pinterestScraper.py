@@ -651,8 +651,8 @@ list: ').upper()
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
-                self._current_dict["img_src"] = video_element.get_attribute('poster')
-                self._download_image(self._current_dict["img_src"])
+                self._current_dict["image_src"] = video_element.get_attribute('poster')
+                self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
         except:
             self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when trying to grab img src.'
@@ -675,21 +675,21 @@ list: ').upper()
                 if not image:
                     self._current_dict["is_image_or_video"] = 'video(story page format)'
                     video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                    self._current_dict["img_src"] = video_container.get_attribute('poster')
-                    self._download_image(self._current_dict["img_src"])
+                    self._current_dict["image_src"] = video_container.get_attribute('poster')
+                    self._download_image(self._current_dict["image_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
                 else: 
                     self._current_dict["is_image_or_video"] = 'story'
-                    self._current_dict["img_src"] = image
-                    self._download_image(self._current_dict["img_src"])
+                    self._current_dict["image_src"] = image
+                    self._download_image(self._current_dict["image_src"])
                     
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
                 self._current_dict["is_image_or_video"] = 'story of videos'
                 video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                self._current_dict["img_src"] = video_container.get_attribute('poster')
-                self._download_image(self._current_dict["img_src"])
+                self._current_dict["image_src"] = video_container.get_attribute('poster')
+                self._download_image(self._current_dict["image_src"])
         except:
             self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
             print('\nStory image grab error.')
@@ -706,6 +706,7 @@ list: ').upper()
             Returns: None '''
 
         if (self._driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['reg_title_element'])
             self._grab_description(self._xpath_dict['desc_container'], self._xpath_dict['desc_element'])
             self._grab_user_and_count(
@@ -715,6 +716,7 @@ list: ').upper()
             self._grab_tags(self._xpath_dict['tag_container'])
             self._grab_image_src()
         elif (self._driver.find_elements_by_xpath('//div[@data-test-id="CloseupDetails"]')):
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['reg_title_element'])
             self._grab_description(self._xpath_dict['desc_container'], self._xpath_dict['desc_element'])
             self._grab_user_and_count(
@@ -724,6 +726,7 @@ list: ').upper()
             self._grab_tags(self._xpath_dict['tag_container'])
             self._grab_image_src()
         else:
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['h1_title_element'])
             self._current_dict["description"] = 'No description available Story format'
             self._grab_user_and_count(
