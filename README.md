@@ -1,21 +1,19 @@
 # Pinterest-webscraping-project
 
-![GitHub Contributors Image](https://contrib.rocks/image?repo=BlairMar/Pinterest-webscraping-project)
-[![Docker](https://badgen.net/badge/icon/docker?icon=docker&label)](https://https://docker.com/)
-[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
-[![macOS](https://svgshare.com/i/ZjP.svg)](https://svgshare.com/i/ZjP.svg)
-[![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
-
 
 ![AiCore - Specialist Ai & Data Educator](./images/AiCore-logo.png)
 
 ## About this project 📑
+
+[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
 
 This project is part of the curriculum of the AiCore BootCamp. The aim of this project is to automate the scraping on the [Pinterest](https://www.pinterest.co.uk/ideas/) website. The entire scraper is written in the ***Python*** programming language.
 
 ![Explore Pinterest](images/Pinterest-root-page.png)
 
 ## People in the project 👩‍💻
+
+![GitHub Contributors Image](https://contrib.rocks/image?repo=BlairMar/Pinterest-webscraping-project)
 
 The contributors of this project are:
 | Full Name | Email |
@@ -39,6 +37,9 @@ The ***Python*** libraries that are required to make the scraper work are:
 
 ## Brief overview how to use the scraper
 
+[![macOS](https://svgshare.com/i/ZjP.svg)](https://svgshare.com/i/ZjP.svg)
+[![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
+
 1. When running the main Python script in VS code, [pinterestScraper.py](src/pinterestScraper.py), a web browser window will appear. In this project, the web browser engine used for scraping is **Google Chrome**.
 
 2. In the terminal of VS code, a list of available categories on the webpage will be printed. The users will be asked to choose how many categories that they would want to scrap and also which category(ies).
@@ -48,6 +49,8 @@ The ***Python*** libraries that are required to make the scraper work are:
 4. Once all the choices have been made, the scraper can be left to perform its task.
 
 ## Deploying the scraper in a Docker container on EC2
+
+[![Docker](https://badgen.net/badge/icon/docker?icon=docker&label)](https://https://docker.com/)
 
 * The EC2 image that should be used to use Docker and for testing is the *Ubuntu (focal) 20.04*. It will not work on the *AMI Linux 2 Free Tier*.
 
