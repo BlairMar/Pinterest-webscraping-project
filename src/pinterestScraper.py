@@ -13,7 +13,7 @@ import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
-import zipfile
+import uuid
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -79,6 +79,8 @@ class PinterestScraper:
             'links_element': './/div[@class="Yl- MIw Hb7"]/div/div/div/div[1]/a',
             'categories_container': '//div[@data-test-id="interestRepContainer"]'
         }
+
+    ''' TODO: Talk to Blair about our over-reliance on attributes and if it's an issue. '''
 
     def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories
@@ -230,10 +232,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self.s3_bucket = input('\nPlease enter the name of your desired S3 bucket. ')
             go_on = ''
             while go_on != 'Y' and go_on != 'N':
-                go_on = input(f'\nYou have enetered {self.s3_bucket} as your s3 bucket. \
-                    Is this correct? Y or N: ').upper()
+                go_on = input(f'\nYou have entered {self.s3_bucket} as your s3 bucket. \
+Is this correct? Y or N: ').upper()
                 if go_on == 'Y':
-
                     print('A = All categories: ')
                     upload_check = ['A']
                     for index, category in enumerate(self.selected_category_names):
@@ -242,8 +243,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     while True:
                         try:
                             all_or_some = input('\nWhich categories would you like to download \
-                            to this bucket?\nPlease enter your choice as a comma separated \
-                            list: ').upper()
+to this bucket?\nPlease enter your choice as a comma separated \
+list: ').upper()
                             all_or_some = (all_or_some.replace(' ', '')).split(',')
                             print(all_or_some)
                             repeat_check = []
@@ -451,10 +452,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
                                     Key = (f'pinterest/{save}/{save}.json')
                                 ) 
                                 self._main_dict[f'{save}'] = json.loads(obj['Body'].read())
-                                # s3 = boto3.resource('s3')
-                                # bucket = s3.Bucket(recent_saves[save][1])
-                                # bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
-
                             else: 
                                 print('\nSomething fishy going on with the save_log. ')
                             self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
@@ -524,6 +521,17 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._extract_links(self._xpath_dict['links_container'], 
                                 self._xpath_dict['links_element'],
                                 n_scrolls)
+
+    def _generate_unique_id(self) -> None:
+
+        ''' Defines a function which generates a unique ID (uuid4) for every image page
+            that is scraped by the scraper. 
+            
+            Arguments: None
+            
+            Returns: None '''
+
+        self._current_dict['unique_id'] = str(uuid.uuid4())
 
     def _grab_title(self, title_element) -> None:
 
@@ -808,6 +816,25 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
 
+    def _update_RDS(self):
+
+        '''
+            reads recent-save-log.json 
+            for key in recent-save.keys()
+                if recent-save[0] == remote
+                    with open temp file
+                        obj = self._s3_client.get_object(
+                                Bucket = recent_saves[save][1],
+                                Key = (f'pinterest/{save}/{save}.json')
+                                ) 
+                                variable = json.loads(obj['Body'].read())
+                                json.dump variable to temp file
+                                
+                                upload temp .json to localhost RDS
+                elif recent-save = 'local'
+                upload local .json to localhost RDS
+                 '''
+
     def get_category_data(self) -> None:
         """Public function that combines all the functionality implemented in the 
         class to scrap the webpages
@@ -821,16 +848,18 @@ list. Values between 1 and {len(category_link_dict)}: ')
         self._initialise_counter(selected_category_names)
         self._initialise_local_folders('../data', selected_category_names)
         self._check_for_logs()
-        # TODO: May be add a while True
-        try:
-            scrolling_times = int(input('\nHow many times to scroll through each page \
+        while True:
+            try:
+                scrolling_times = int(input('\nHow many times to scroll through each page \
 (~5 to 10 images on average per scroll)?: '))
-        except:
-            raise Exception('Invalid input')
+                break
+            except:
+                print('Invalid input, try again: ')
         self._grab_images_src(n_scrolls=scrolling_times)
         self._grab_page_data()
         self._data_dump()
         log_created = self._create_log()
+        # self._update_RDS()
         self._driver.quit()
         print('Done and done!')
         self._driver.quit()
