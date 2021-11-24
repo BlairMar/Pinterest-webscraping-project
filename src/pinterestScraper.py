@@ -861,7 +861,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
         self._driver.quit()
 
 if __name__ == "__main__": 
-
+    
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper._get_category_links ('//*[@id="mweb-unauth-container"]/div/div/div')
 
