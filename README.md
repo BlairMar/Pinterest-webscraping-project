@@ -1,5 +1,12 @@
 # Pinterest-webscraping-project
 
+![GitHub Contributors Image](https://contrib.rocks/image?repo=BlairMar/Pinterest-webscraping-project)
+[![Docker](https://badgen.net/badge/icon/docker?icon=docker&label)](https://https://docker.com/)
+[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
+[![macOS](https://svgshare.com/i/ZjP.svg)](https://svgshare.com/i/ZjP.svg)
+[![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
+
+
 ![AiCore - Specialist Ai & Data Educator](./images/AiCore-logo.png)
 
 ## About this project 📑
