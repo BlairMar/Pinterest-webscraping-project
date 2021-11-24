@@ -647,19 +647,23 @@ list: ').upper()
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
-                self._current_dict['downloaded'] = True
+                if self._current_dict['downloaded'] == False:
+                    pass
+                else:
+                    self._current_dict['downloaded'] = True
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
                 self._current_dict["image_src"] = video_element.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
-                self._current_dict['downloaded'] = True
+                if self._current_dict['downloaded'] == False:
+                    pass
+                else:
+                    self._current_dict['downloaded'] = True
         except:
             self._current_dict['downloaded'] = False
             print('\nImage grab Error. Possible embedded video (youtube).')
-
-    # Need to look into fixing embedded youtube videos.
 
     def _grab_story_image_srcs(self) -> None:
 
@@ -795,7 +799,6 @@ list: ').upper()
             
             Returns: None '''
         
-
         # if dict exists json.load
         print('Creating save logs: ')
         if os.path.exists('../data/recent-save-log.json'):
@@ -807,7 +810,6 @@ list: ').upper()
         for category in tqdm(self.selected_category_names):
             if category in self._s3_list:
                 update = ['remote', self.s3_bucket]
-
             else:
                 update = 'local'
             self.recent_save_dict[category] = update
