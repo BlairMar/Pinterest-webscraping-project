@@ -1,3 +1,4 @@
+from hypothesis.core import TestFunc
 from selenium import webdriver     ###########
 from webdriver_manager.chrome import ChromeDriverManager #########
 from webdriver_manager import driver
@@ -39,34 +40,65 @@ class PinterestScraperTestCase(unittest.TestCase):
         self.pinterest_scraper = pinterestScraper.PinterestScraper('https://www.pinterest.co.uk/ideas/') #creating an instance with inserting a root 
         
     def tearDown (self):
-        self.pinterest_scraper.driver.close()  #after each unittest, we close the instance of the class
+        self.pinterest_scraper._driver.close()  #after each unittest, we close the instance of the class
 
-#     def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
-#         '''
-#         This funtion is used to see if a dictionary is created
-#         '''
-#         test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
-#         self.assertIsInstance(test_dict, dict) #test if output is dictionary
+    # def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
+    #     '''
+    #     This funtion is used to see if a dictionary is created
+    #     '''
+    #     test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+    #     self.assertIsInstance(test_dict, dict) #test if output is dictionary
 
-#     def test_get_category_links(self):
-#          '''
-#          This function is used to test if correct links are retreived
-#          '''
-#          test_href_links = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')  # outputs an enumerated dictionary of the href links
+    # def test_get_category_links(self):
+    #      '''
+    #      This function is used to test if correct links are retreived
+    #      '''
+    #      test_href_links = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')  # outputs an enumerated dictionary of the href links
         
-#          hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
-#                                        '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
-#                                        '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
+    #      hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
+    #                                    '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
+    #                                    '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
                                        
-#          hand_picked_category_hrefs = []
-#          for xpath in hand_picked_category_xpaths:
-#              hand_picked_category_hrefs.append(self.pinterest_scraper.driver.find_element_by_xpath(xpath).get_attribute('href'))
-#          counter = 0
-#          for ele in hand_picked_category_hrefs:   
-#             if ele in test_href_links.values():
-#                 counter +=1
-#                 print(counter)
-#          self.assertEqual(counter, 3) # add self to all asserts
+    #      hand_picked_category_hrefs = []
+    #      for xpath in hand_picked_category_xpaths:
+    #          hand_picked_category_hrefs.append(self.pinterest_scraper._driver.find_element_by_xpath(xpath).get_attribute('href'))
+    #      counter = 0
+    #      for ele in hand_picked_category_hrefs:   
+    #         if ele in test_href_links.values():
+    #             counter +=1
+    #             print(counter)
+    #      self.assertEqual(counter, 3) # add self to all asserts
+
+
+    def test_get_category_links (self):
+        '''
+        tests if output is corrrct dictionary'''
+        
+        output = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')
+        test = test_href_links = {1: 'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/',
+        2: 'https://www.pinterest.co.uk/ideas/holidays/910319220330/', 
+        3: 'https://www.pinterest.co.uk/ideas/animals/925056443165/', 
+        4: 'https://www.pinterest.co.uk/ideas/architecture/918105274631/', 
+        5: 'https://www.pinterest.co.uk/ideas/art/961238559656/', 
+        6: 'https://www.pinterest.co.uk/ideas/beauty/935541271955/', 
+        7: 'https://www.pinterest.co.uk/ideas/design/902065567321/', 
+        8: 'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 
+        9: 'https://www.pinterest.co.uk/ideas/education/922134410098/', 
+        10: 'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 
+        11: 'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 
+        12: 'https://www.pinterest.co.uk/ideas/finance/913207199297/', 
+        13: 'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/', 
+        14: 'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/',
+        15: 'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 
+        16: 'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 
+        17: 'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 
+        18: 'https://www.pinterest.co.uk/ideas/tattoos/922203297757/', 
+        19: 'https://www.pinterest.co.uk/ideas/travel/908182459161/', 
+        20: 'https://www.pinterest.co.uk/ideas/vehicles/918093243960/', 
+        21: 'https://www.pinterest.co.uk/ideas/weddings/903260720461/', 
+        22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/'}
+        self.assertEqual (output, test)
+
 
 #     def test_print_options(self):
 #         '''
@@ -112,19 +144,26 @@ class PinterestScraperTestCase(unittest.TestCase):
 
 
 
-    # #new
-    # @patch('os.makedirs')   #using this decorater to make sure that 'os.makedirs' is used in the method (which is imported from os)
-    # def test_initialise_counter_and_local_folders (mock_system):
-    #     # os.makedirs()
-    #     mock_system.assert_called()
+   
 
-    def test_initialise_counter_and_local_folders (self): #AttributeError: 'PinterestScraper' object has no attribute 'selected_category_names'- yet again- error as the vriable is defined only in the scraper
+    def test_initialise_local_folders (self): #AttributeError: 'PinterestScraper' object has no attribute 'selected_category_names'- yet again- error as the vriable is defined only in the scraper
             #^well, this was an error- solution- instead of self.selected_category_names defined as attribute within 
             # running the class methods (NOT right at the start), i had taken away self, and placed it as an input to the method 
         
-        test = self.pinterest_scraper._initialise_counter_and_local_folders('/Users/danielzakaiem/Downloads', 'Animals') #have i typed in a correct path?
-        test 
+        test = self.pinterest_scraper._initialise_local_folders('/Users/danielzakaiem/Downloads', ['Animals']) #have i typed in a correct path?
         
+    
+    
+    
+    # def test_initialise_counter (self):
+    #     pass
+
+    # def test_delete_redundant_saves (self):
+    #     pass
+
+    
+
+
     
 
         

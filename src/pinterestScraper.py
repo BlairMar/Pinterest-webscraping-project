@@ -119,14 +119,7 @@ class PinterestScraper:
 
         # Print all categories available on the route page
         for idx, category in category_link_dict.items():
-<<<<<<< HEAD
-            print(f"\t {idx}: {category.replace(self.root, '').split('/')[0]}")
-        end = time.time()
-        print (f'It had taken {end - start} seconds to run this print_options method') 
-        return 'success'      
-=======
             print(f"\t {idx}: {category.replace(self._root, '').split('/')[0]}")
->>>>>>> main
 
     def _categories_to_save_imgs(self, selected_category_names) -> None:
 
