@@ -588,10 +588,6 @@ list: ').upper()
             else:
                 self._current_dict["follower_count"] = followers.split()[0]
         except:
-
-            self._current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when\
-            trying to grab user info.'
-
             print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
@@ -615,6 +611,7 @@ list: ').upper()
     def _download_image(self, src: str) -> None:
         """Download the image either remotely or locally
         """
+
         if self._cat_imgs_to_save[self._category]:
             if self._category not in self._s3_list: # Save locally
                 urllib.request.urlretrieve(src, 
@@ -648,14 +645,16 @@ list: ').upper()
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
+                self._current_dict['downloaded'] = True
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
                 self._current_dict["image_src"] = video_element.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
+                self._current_dict['downloaded'] = True
         except:
-            self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when trying to grab img src.'
+            self._current_dict['downloaded'] = False
             print('\nImage grab Error. Possible embedded video (youtube).')
 
     # Need to look into fixing embedded youtube videos.
@@ -691,7 +690,6 @@ list: ').upper()
                 self._current_dict["image_src"] = video_container.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
         except:
-            self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
             print('\nStory image grab error.')
 
 
