@@ -42,35 +42,35 @@ class PinterestScraperTestCase(unittest.TestCase):
     def tearDown (self):
         self.pinterest_scraper._driver.close()  #after each unittest, we close the instance of the class
 
-    # def test_get_category_links(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
-    #     '''
-    #     This funtion is used to see if a dictionary is created
-    #     '''
-    #     test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
-    #     self.assertIsInstance(test_dict, dict) #test if output is dictionary
+    def test_get_category_links_1(self): # don't use @given here since we dont want to test ALL possible strings, just the string of the categories xpath 
+        '''
+        This funtion is used to see if a dictionary is created
+        '''
+        test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
+        self.assertIsInstance(test_dict, dict) #test if output is dictionary
 
-    # def test_get_category_links(self):
-    #      '''
-    #      This function is used to test if correct links are retreived
-    #      '''
-    #      test_href_links = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')  # outputs an enumerated dictionary of the href links
+    def test_get_category_links_2(self):
+         '''
+         This function is used to test if correct links are retreived
+         '''
+         test_href_links = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')  # outputs an enumerated dictionary of the href links
         
-    #      hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
-    #                                    '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
-    #                                    '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
+         hand_picked_category_xpaths = ['//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/a',  #need to get 3 diff href links
+                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[6]/div/a',
+                                       '//*[@id="mweb-unauth-container"]/div/div/div/div[9]/div/a']
                                        
-    #      hand_picked_category_hrefs = []
-    #      for xpath in hand_picked_category_xpaths:
-    #          hand_picked_category_hrefs.append(self.pinterest_scraper._driver.find_element_by_xpath(xpath).get_attribute('href'))
-    #      counter = 0
-    #      for ele in hand_picked_category_hrefs:   
-    #         if ele in test_href_links.values():
-    #             counter +=1
-    #             print(counter)
-    #      self.assertEqual(counter, 3) # add self to all asserts
+         hand_picked_category_hrefs = []
+         for xpath in hand_picked_category_xpaths:
+             hand_picked_category_hrefs.append(self.pinterest_scraper._driver.find_element_by_xpath(xpath).get_attribute('href'))
+         counter = 0
+         for ele in hand_picked_category_hrefs:   
+            if ele in test_href_links.values():
+                counter +=1
+                print(counter)
+         self.assertEqual(counter, 3) # add self to all asserts
 
 
-    def test_get_category_links (self):
+    def test_get_category_links_3 (self):
         '''
         tests if output is corrrct dictionary'''
         
@@ -99,21 +99,53 @@ class PinterestScraperTestCase(unittest.TestCase):
         22: 'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/'}
         self.assertEqual (output, test)
 
+  
+    # def test_get_category_links(self):
+    #     '''
+    #     This function tests if the entire method is run
+    #     '''
+    #     dict_of_hrefs = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div') #gives dict output of enumerated hrefs
+    #     handpicked_hrefs = ['https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/',   #which should be in the dictionary
+    #     'https://www.pinterest.co.uk/ideas/holidays/910319220330/',  #maybe instaed of handpicking, make selenium grab them all and make this list?
+    #     'https://www.pinterest.co.uk/ideas/animals/925056443165/', 
+    #     'https://www.pinterest.co.uk/ideas/architecture/918105274631/',
+    #     'https://www.pinterest.co.uk/ideas/art/961238559656/', 
+    #     'https://www.pinterest.co.uk/ideas/beauty/935541271955/',
+    #     'https://www.pinterest.co.uk/ideas/design/902065567321/', 
+    #     'https://www.pinterest.co.uk/ideas/diy-and-crafts/934876475639/', 
+    #     'https://www.pinterest.co.uk/ideas/education/922134410098/', 
+    #     'https://www.pinterest.co.uk/ideas/electronics/960887632144/', 
+    #     'https://www.pinterest.co.uk/ideas/event-planning/941870572865/', 
+    #     'https://www.pinterest.co.uk/ideas/finance/913207199297/',
+    #     'https://www.pinterest.co.uk/ideas/food-and-drink/918530398158/',
+    #     'https://www.pinterest.co.uk/ideas/lawn-and-garden/909983286710/',
+    #     'https://www.pinterest.co.uk/ideas/home-decor/935249274030/', 
+    #     'https://www.pinterest.co.uk/ideas/mens-fashion/924581335376/', 
+    #     'https://www.pinterest.co.uk/ideas/quotes/948192800438/', 
+    #     'https://www.pinterest.co.uk/ideas/tattoos/922203297757/',
+    #     'https://www.pinterest.co.uk/ideas/travel/908182459161/',
+    #     'https://www.pinterest.co.uk/ideas/vehicles/918093243960/',
+    #     'https://www.pinterest.co.uk/ideas/weddings/903260720461/',
+    #     'https://www.pinterest.co.uk/ideas/womens-fashion/948967005229/',
+    #     'https://www.pinterest.co.uk/ideas/thanksgiving/949410256396/']
+    #     list_of_hrefs = [*dict_of_hrefs.values()] #should now judst show the values (hrefs) of that dict^
+    #     counter = 0
+    #     i = 0
+    #     for element in list_of_hrefs:
+    #         category = handpicked_hrefs[i] #start off with categories[0] as category 
+    #         counter += (element.count(category)) # elem.counts(category) should = 1    adds 1 if 'thanksgiving is included in first element in dictionary. output is 1 if it is included
+    #         i += 1 # next time round, we move to see if 'holidays'
+                    
+    #     self.assertEqual(counter, 22) 
 
-#     def test_print_options(self):
-#         '''
-#         This function tests if the entire method is run
-#         '''
-#         category_link_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a') #using output of last func for input of this function
-#         test_available_categories = self.pinterest_scraper._print_options(category_link_dict) # prints out all options (1:hallowean 2: holiday... just as the scraper classdoes
-#         print (test_available_categories) 
-#         self.assertEqual('success', test_available_categories) # ascertains that the entire function actually ran
 
-#    # #new    
-#     # def test_catgories_to_save_imgs (self):  # ADDED THIS AS A NEW TEST FOR THIS COMMIT   
-#     #     pass                   
+    # def test_get_user_input (self): 
+    #     category_link_dict =  self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')
+    #     test_list = self.pinterest_scraper._get_user_input(category_link_dict) #outputs the list of the method - input categories 1,4 and 10 for the test
+        
 
-#     # #new 
+
+# # #new 
 #     def test_get_user_input (self): 
      
 
@@ -146,11 +178,11 @@ class PinterestScraperTestCase(unittest.TestCase):
 
    
 
-    def test_initialise_local_folders (self): #AttributeError: 'PinterestScraper' object has no attribute 'selected_category_names'- yet again- error as the vriable is defined only in the scraper
-            #^well, this was an error- solution- instead of self.selected_category_names defined as attribute within 
-            # running the class methods (NOT right at the start), i had taken away self, and placed it as an input to the method 
+    # def test_initialise_local_folders (self): #AttributeError: 'PinterestScraper' object has no attribute 'selected_category_names'- yet again- error as the vriable is defined only in the scraper
+    #         #^well, this was an error- solution- instead of self.selected_category_names defined as attribute within 
+    #         # running the class methods (NOT right at the start), i had taken away self, and placed it as an input to the method 
         
-        test = self.pinterest_scraper._initialise_local_folders('/Users/danielzakaiem/Downloads', ['Animals']) #have i typed in a correct path?
+    #     test = self.pinterest_scraper._initialise_local_folders('/Users/danielzakaiem/Downloads', ['Animals']) #have i typed in a correct path?
         
     
     
