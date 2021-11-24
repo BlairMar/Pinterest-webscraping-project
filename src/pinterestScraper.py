@@ -626,6 +626,8 @@ list: ').upper()
                         f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg', self.s3_bucket, 
                         f'pinterest/{self._category}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     sleep(0.5)
+        else:
+            self._current_dict['downloaded'] = False
 
     def _grab_image_src(self) -> None:
 
