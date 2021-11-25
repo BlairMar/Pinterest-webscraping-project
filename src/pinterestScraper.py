@@ -8,12 +8,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
+
 import uuid
+
+import zipfile
+import pandas as pd
+from sqlalchemy import create_engine
+import os
+
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -48,8 +55,8 @@ class PinterestScraper:
         self._category = None
         self._category_image_count = defaultdict(int)
         self._root = root
-        self._driver = webdriver.Chrome()
-        # self._driver = webdriver.Chrome(ChromeDriverManager().install())
+        # self._driver = webdriver.Chrome()
+        self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._image_set = set()
         self._save_path = None
         self._link_set = set()
@@ -216,9 +223,23 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         self.selected_category_names = [category.split('/')[4] for category in self.selected_category.values()]
         print(f"Categories selected: {self.selected_category_names}")
+
         return self.selected_category_names
 
-    def _interior_cloud_save_loop(self, remote) -> Union[None, str]:
+    def _create_RDS_user_input(self):
+        valid = False
+        while not valid:
+            rds_answer =  input("Do you want to create an RDS? [Y/n]:").lower()
+            if rds_answer == 'y' or rds_answer == 'n':
+                valid = True
+
+                if rds_answer == 'y':
+                    print('Creating RDS...')
+                    self._json_to_rds('../data/')
+                else:
+                    print('Data will not be saved in an RDS...')
+
+    def _interior_cloud_save_loop(self, remote: str) -> Union[None, str]:
 
         ''' Defines the interior loop of the cloud save function. Would all have been in one function but I needed to repeat
             this section of code if the user made an error entering their bucket name. 
@@ -833,6 +854,7 @@ list: ').upper()
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
 
+
     def _update_RDS(self):
 
         '''
@@ -851,6 +873,65 @@ list: ').upper()
                 elif recent-save = 'local'
                 upload local .json to localhost RDS
                  '''
+
+    def _json_to_rds(self, data_path:str):
+    # print()
+
+
+        DATABASE_TYPE = 'postgresql'
+        DBAPI = 'psycopg2'
+        # ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
+        USER = input('User: ')
+        if not USER:
+            USER = 'postgres'
+        PASSWORD = input('Password: ')
+        
+        HOST = input('Host: ')
+        if not HOST:
+            HOST = 'localhost'
+
+        PORT = input('Port: ')
+        if not PORT:
+            PORT = 5433
+        DATABASE = input('Database: ')
+        if not DATABASE:
+            DATABASE = 'Pagila'
+
+        engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
+        # engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
+
+        engine.connect()
+
+
+
+        folders = os.listdir(data_path)
+        for folder in folders:
+            if '.json' not in folder:
+                # print(folder, os.listdir(data_path+folder))
+                if not os.listdir(data_path+folder):
+                    continue
+                json_path = data_path + folder + '/' + os.listdir(data_path+folder)[0]
+                print(json_path)
+                df = pd.read_json(json_path).T
+                df['name'] = df.index
+                df['id'] = list(range(len(df)))
+                df = df.set_index('id')
+                file_name_col = df.pop('name')
+                df.insert(0, 'name', file_name_col)
+                print(df.head(3))
+            # valid = False
+
+            # while not valid:
+            #     try:
+            #         save_to_rds = input('Do you wish to save the JSON data to AWS RDS? [Y/n]: ').lower()
+            #         assert save_to_rds == 'y' or save_to_rds == 'n'
+            #         valid = True
+            #     except Exception:
+            #         print('Invalid input')
+
+                
+                df.to_sql(f'pinterest_{folder}', engine, if_exists='replace')
+
 
     def get_category_data(self) -> None:
         """Public function that combines all the functionality implemented in the 
@@ -876,8 +957,12 @@ list: ').upper()
         self._grab_page_data()
         self._data_dump()
         log_created = self._create_log()
+
         # self._update_RDS()
         self._driver.quit()
+
+        self._create_RDS_user_input()
+
         print('Done and done!')
         self._driver.quit()
 
