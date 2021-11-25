@@ -647,20 +647,20 @@ list: ').upper()
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
-                if self._current_dict['downloaded'] == False:
-                    pass
-                else:
+                if 'downloaded' not in self._current_dict.keys():
                     self._current_dict['downloaded'] = True
+                else:
+                    pass
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
                 self._current_dict["image_src"] = video_element.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
-                if self._current_dict['downloaded'] == False:
-                    pass
-                else:
+                if 'downloaded' not in self._current_dict.keys():
                     self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
             self._current_dict['downloaded'] = False
             print('\nImage grab Error. Possible embedded video (youtube).')
@@ -683,19 +683,31 @@ list: ').upper()
                     self._current_dict["image_src"] = video_container.get_attribute('poster')
                     self._download_image(self._current_dict["image_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 else: 
-                    self._current_dict["is_image_or_video"] = 'story'
+                    self._current_dict["is_image_or_video"] = 'image(story page format)'
                     self._current_dict["image_src"] = image
                     self._download_image(self._current_dict["image_src"])
-                    
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
-                self._current_dict["is_image_or_video"] = 'story of videos'
+                self._current_dict["is_image_or_video"] = 'multi-video(story page format)'
                 video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
                 self._current_dict["image_src"] = video_container.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
+            self._current_dict['downloaded'] = False
             print('\nStory image grab error.')
 
 
