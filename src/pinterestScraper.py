@@ -113,8 +113,6 @@ class PinterestScraper:
             )
         categories = container.find_elements_by_xpath('.//a')
         # Extract the href
-        X = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}######
-        print(f'HERE IT IS: {X} f')##########
         return {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
 
     def _print_options(self, category_link_dict: dict):
@@ -318,6 +316,7 @@ list: ').upper()
                     break
             else:
                 print('\nLoop structure error. Luke you stupid...')
+        return True
 
     def _initialise_local_folders(self, directory_path, selected_category_names) -> None:
 
@@ -345,7 +344,7 @@ list: ').upper()
 
         for category in selected_category_names:
             self._counter_dict[f'{category}'] = 0
-
+        print (f'HERE IS SELF.COUNTER_DICT {self._counter_dict}X')####
         return self._counter_dict
 
     def _delete_redundant_saves(self, save, recent_save, fresh) -> None:
@@ -1015,10 +1014,11 @@ list: ').upper()
 if __name__ == "__main__": 
     
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
-    # Scrap the website
-    pinterest_scraper.get_category_data()
-    # Create RDS from collected data
-    pinterest_scraper.create_RDS()
+    # # Scrap the website
+    # pinterest_scraper.get_category_data()
+    # # Create RDS from collected data
+    # pinterest_scraper.create_RDS()
+    pinterest_scraper._initialise_counter([ 'thanksgiving', 'architecture', 'electronics'])
 
     # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
     # it as an actual return to pass it into the following function.

@@ -179,20 +179,21 @@ class PinterestScraperTestCase(unittest.TestCase):
 
 
 
-    
-    def test_create_RDS (self):
-        test = self.pinterest_scraper.create_RDS()
-        self.assertEqual(test, True)
+    # #makes sure entire method is run - haveto type in RDS details manually
+    # def test_create_RDS (self):
+    #     test = self.pinterest_scraper.create_RDS()
+    #     self.assertEqual(test, True)
 
 
-    #new
+    #not sure what inut should be????
     # def test_interior_cloud_save_loop (self):
     #     pass
     
     
-    #new
+    # # ERROR- LONG TO SEXPLAIN, BUT _interior_cloud_save_loop FUNCTION NEEDS AN INPUT TO BE  self.selected_category_names
     # def test_save_to_cloud_or_local (self):
-    #     pass
+    #     test = self.pinterest_scraper._save_to_cloud_or_local()
+    #     self.assertEqual(test, True)
 
 
 
@@ -212,9 +213,26 @@ class PinterestScraperTestCase(unittest.TestCase):
     #     self.assertEqual(counter, 3) # asserts if file exists
     
     
+    # #makes sure output is a dictionary 
+    # def test_initialise_counter_1 (self):
+    #     selected_category_names = [ 'thanksgiving', 'architecture', 'electronics']
+    #     test = self.pinterest_scraper._initialise_counter(selected_category_names)
+    #     self.assertIsInstance(test, dict)
+
     
-    # def test_initialise_counter (self):
-    #     pass
+    #makes sure that dictionary has the specific keys {'thanksgiving': 0, 'architecture': 0, 'electronics': 0}
+    def test_initialise_counter_2 (self):
+        selected_category_names = [ 'thanksgiving', 'architecture', 'electronics']
+        test = self.pinterest_scraper._initialise_counter(selected_category_names) #output should be this dict: {'thanksgiving': 0, 'architecture': 0, 'electronics': 0}
+        selected_categories = [ 'thanksgiving', 'architecture', 'electronics']
+        counter = 0
+        for category in selected_categories:
+           if category in test:
+               counter += 1
+        self.assertEqual (counter, 3)
+         
+            
+       
 
     # def test_delete_redundant_saves (self):
     #     pass
