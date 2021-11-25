@@ -13,8 +13,17 @@ import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
+
+import uuid
+
 import zipfile
+import pandas as pd
+from sqlalchemy import create_engine
+import os
+
 from selenium.webdriver.chrome.options import Options
+import sys
+
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -59,7 +68,6 @@ class PinterestScraper:
         chrome_options.add_argument('--disable-dev-shm-usage')
         self._driver = webdriver.Chrome(options=chrome_options)
         self._image_set = set()
-        self._category_link_dict = []
         self._save_path = None
         self._link_set = set()
         self._log = set()
@@ -89,6 +97,11 @@ class PinterestScraper:
             'categories_container': '//div[@data-test-id="interestRepContainer"]'
         }
 
+        self._driver.get(self._root)
+        self._args = sys.argv
+
+    ''' TODO: Talk to Blair about our over-reliance on attributes and if it's an issue. '''
+
     def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories
         
@@ -100,16 +113,14 @@ class PinterestScraper:
         ---------------------
         dict: dictionary containing the href of each category
         """
-        self._driver.get(self._root)
+        # self._driver.get(self._root)
         # Get the a list of all the categories
         container = WebDriverWait(self._driver, 2).until(
                 EC.presence_of_element_located((By.XPATH, categories_xpath))
             )
         categories = container.find_elements_by_xpath('.//a')
         # Extract the href
-        self._category_link_dict = {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
-
-        return self._category_link_dict
+        return {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
 
     def _print_options(self, category_link_dict: dict):
         """Print all categories available on the homepage
@@ -118,18 +129,20 @@ class PinterestScraper:
         ---------------------
         category_link_dict: dict
         """
-        print(f"\n The options (Total {len(category_link_dict)})  are:")
+        print(f"\n The options (Total {len(category_link_dict)}) are:")
 
         # Print all categories available on the route page
         for idx, category in category_link_dict.items():
             print(f"\t {idx}: {category.replace(self._root, '').split('/')[0]}")
+        # Is a return needed here to test?
 
     def _categories_to_save_imgs(self, selected_category_names) -> None:
 
         get_any = ''
         while get_any != 'N' and get_any != 'Y':
-            get_any = input('\nWould you like to download images for \
-any of the selected categories? Y or N: ').upper()
+#             get_any = input('\nWould you like to download images for \
+# any of the selected categories? Y or N: ').upper()
+            get_any = self._args[3].upper()
             if get_any == 'Y':
                 print('A = All categories: ')
                 download_check = ['A']
@@ -138,8 +151,9 @@ any of the selected categories? Y or N: ').upper()
                     download_check.append(str(index + 1))
                 while True:
                     try:
-                        downloads = input('\nPlease select which categories you would \
-like to download images for.\nEnter your answer as a comma separated list: ').upper()
+#                         downloads = input('\nPlease select which categories you would \
+# like to download images for.\nEnter your answer as a comma separated list: ').upper()
+                        downloads = self._args[4].upper()
                         downloads = (downloads.replace(' ', '')).split(',')
                         repeat_check = []
                         for option in downloads:
@@ -178,8 +192,9 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
 
         while True:
             try:
-                categories_num = int(input(f"\nHow many categories of images \
-do you wish to grab? 1 to {len(category_link_dict)}: \n"))
+#                 categories_num = int(input(f"\nHow many categories of images \
+# do you wish to grab? 1 to {len(category_link_dict)}: \n"))
+                categories_num = int(self._args[1])
                 assert 0 < categories_num <= len(category_link_dict)
                 break
             except:  
@@ -195,8 +210,9 @@ do you wish to grab? 1 to {len(category_link_dict)}: \n"))
                 check_list = [str(x+1) for x in range(len(category_link_dict))]
 
                 while len(choices) != categories_num:
-                    choices = input(f"\nPlease select your desired categories. \
-Separate your choices by commas. You have {categories_num} choice(s) to make: ")
+#                     choices = input(f"\nPlease select your desired categories. \
+# Separate your choices by commas. You have {categories_num} choice(s) to make: ")
+                    choices = self._args[2]
 
                     choices = (choices.replace(' ', '')).split(',')
                     print(choices)
@@ -224,9 +240,34 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         self.selected_category_names = [category.split('/')[4] for category in self.selected_category.values()]
         print(f"Categories selected: {self.selected_category_names}")
+
         return self.selected_category_names
 
-    def _interior_cloud_save_loop(self, remote) -> Union[None, str]:
+    def create_RDS(self):
+        """Ask for user input whether a RDS needs to be created
+        and if so, whether it needs to be remotely created or locally"""
+        valid = False
+        while not valid:
+            # rds_answer =  input("Do you want to create an RDS? [Y/n]:").lower()
+            rds_answer = self._args[11].upper()
+            if rds_answer == 'Y' or rds_answer == 'N':
+                valid = True
+
+                if rds_answer == 'Y':
+                    print('Creating RDS...')
+                    # Ask whether to create/update tables on AWS RDS or local RDS
+                    # remote_RDS = input("Do you want a remote AWS RDS? [Y/n]: ").lower()
+                    remote_RDS = self._args[12].upper()
+                    if remote_RDS == 'Y': # Remote
+                        self._json_to_rds('../data/', True)
+                    elif remote_RDS == 'N': # Local
+                        self._json_to_rds('../data/', False)
+                    else:
+                        raise Exception('Invalid answer')
+                else:
+                    print('Data will not be saved in an RDS...')
+
+    def _interior_cloud_save_loop(self, remote: str) -> Union[None, str]:
 
         ''' Defines the interior loop of the cloud save function. Would all have been in one function but I needed to repeat
             this section of code if the user made an error entering their bucket name. 
@@ -237,13 +278,14 @@ list. Values between 1 and {len(category_link_dict)}: ')
                       None at all other times '''
 
         if remote == 'Y':
-            self.s3_bucket = input('\nPlease enter the name of your desired S3 bucket. ')
+            # self.s3_bucket = input('\nPlease enter the name of your desired S3 bucket. ')
+            self.s3_bucket = self._args[6]
             go_on = ''
             while go_on != 'Y' and go_on != 'N':
-                go_on = input(f'\nYou have enetered {self.s3_bucket} as your s3 bucket. \
-                    Is this correct? Y or N: ').upper()
+#                 go_on = input(f'\nYou have entered {self.s3_bucket} as your s3 bucket. \
+# Is this correct? Y or N: ').upper()
+                go_on - self._args[7].upper()
                 if go_on == 'Y':
-
                     print('A = All categories: ')
                     upload_check = ['A']
                     for index, category in enumerate(self.selected_category_names):
@@ -251,9 +293,10 @@ list. Values between 1 and {len(category_link_dict)}: ')
                         upload_check.append(str(index + 1))
                     while True:
                         try:
-                            all_or_some = input('\nWhich categories would you like to download \
-                            to this bucket?\nPlease enter your choice as a comma separated \
-                            list: ').upper()
+#                             all_or_some = input('\nWhich categories would you like to download \
+# to this bucket?\nPlease enter your choice as a comma separated \
+# list: ').upper()          
+                            all_or_some = self._args[8]
                             all_or_some = (all_or_some.replace(' ', '')).split(',')
                             print(all_or_some)
                             repeat_check = []
@@ -277,13 +320,16 @@ list. Values between 1 and {len(category_link_dict)}: ')
             print('\nAll data will be stored on your local machine. ')
         else:
             print('\nYour selection was not valid, please choose again. ')
+            return ''
 
     def _save_to_cloud_or_local(self) -> None:
 
         remote = ''
         while remote != 'N' and remote != 'Y':
             if remote == '':
-                remote = input('\nWould you like to save any of your data/images to a remote bucket? Y or N: ').upper()
+#                 remote = input('\nWould you like to save any of \
+# your data/images to a remote bucket? Y or N: ').upper()
+                remote = self._args[5].upper()
                 remote = self._interior_cloud_save_loop(remote)
                 if remote == None:
                     break
@@ -361,10 +407,12 @@ list. Values between 1 and {len(category_link_dict)}: ')
             s3 = boto3.resource('s3')
             src_bucket = s3.Bucket(recent_save[save][1])
             print('Moving saved files to specified location: ')
-            for src in tqdm(src_bucket.objects.filter(Prefix=f"pinterest/{save}/")):
+            for src in tqdm(src_bucket.objects.filter(Prefix=
+            f"pinterest/{save}/")):
                 # Move any items from remote bucket in to new local folder.
                 if fresh == 'Y':
-                    src_bucket.download_file(src.key, f"../data/{save}/{src.key.split('/')[2]}")
+                    src_bucket.download_file(src.key, 
+                    f"../data/{save}/{src.key.split('/')[2]}")
                     # Delete old remote file.
                     src.delete()
                 elif fresh == 'N':
@@ -441,7 +489,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 # data_loc = [recent_saves[key] for key in saves]
                 fresh = ''
                 while fresh != 'Y' and fresh != 'N':
-                    fresh = input('\nWould you like to add to your existing data? Y or N: ').upper()
+                    # fresh = input('\nWould you like to add to your existing data? Y or N: ').upper()
+                    fresh = self._args[9].upper()
                     if fresh == 'Y':
                         self._link_set = set(tuples_content)
                         self._log = set(tuples_content)
@@ -460,10 +509,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
                                     Key = (f'pinterest/{save}/{save}.json')
                                 ) 
                                 self._main_dict[f'{save}'] = json.loads(obj['Body'].read())
-                                # s3 = boto3.resource('s3')
-                                # bucket = s3.Bucket(recent_saves[save][1])
-                                # bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
-
                             else: 
                                 print('\nSomething fishy going on with the save_log. ')
                             self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
@@ -534,6 +579,17 @@ list. Values between 1 and {len(category_link_dict)}: ')
                                 self._xpath_dict['links_element'],
                                 n_scrolls)
 
+    def _generate_unique_id(self) -> None:
+
+        ''' Defines a function which generates a unique ID (uuid4) for every image page
+            that is scraped by the scraper. 
+            
+            Arguments: None
+            
+            Returns: None '''
+
+        self._current_dict['unique_id'] = str(uuid.uuid4())
+
     def _grab_title(self, title_element) -> None:
 
         ''' Defines a function that grabs the title from a Pinterest page
@@ -589,10 +645,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
             else:
                 self._current_dict["follower_count"] = followers.split()[0]
         except:
-
-            self._current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when\
-            trying to grab user info.'
-
             print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
@@ -616,6 +668,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
     def _download_image(self, src: str) -> None:
         """Download the image either remotely or locally
         """
+
         if self._cat_imgs_to_save[self._category]:
             if self._category not in self._s3_list: # Save locally
                 urllib.request.urlretrieve(src, 
@@ -630,6 +683,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                         f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg', self.s3_bucket, 
                         f'pinterest/{self._category}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     sleep(0.5)
+        else:
+            self._current_dict['downloaded'] = False
 
     def _grab_image_src(self) -> None:
 
@@ -649,17 +704,23 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
-                self._current_dict["img_src"] = video_element.get_attribute('poster')
-                self._download_image(self._current_dict["img_src"])
+                self._current_dict["image_src"] = video_element.get_attribute('poster')
+                self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
-            self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when trying to grab img src.'
+            self._current_dict['downloaded'] = False
             print('\nImage grab Error. Possible embedded video (youtube).')
-
-    # Need to look into fixing embedded youtube videos.
 
     def _grab_story_image_srcs(self) -> None:
 
@@ -676,23 +737,34 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 if not image:
                     self._current_dict["is_image_or_video"] = 'video(story page format)'
                     video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                    self._current_dict["img_src"] = video_container.get_attribute('poster')
-                    self._download_image(self._current_dict["img_src"])
+                    self._current_dict["image_src"] = video_container.get_attribute('poster')
+                    self._download_image(self._current_dict["image_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 else: 
-                    self._current_dict["is_image_or_video"] = 'story'
-                    self._current_dict["img_src"] = image
-                    self._download_image(self._current_dict["img_src"])
-                    
+                    self._current_dict["is_image_or_video"] = 'image(story page format)'
+                    self._current_dict["image_src"] = image
+                    self._download_image(self._current_dict["image_src"])
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
-                self._current_dict["is_image_or_video"] = 'story of videos'
+                self._current_dict["is_image_or_video"] = 'multi-video(story page format)'
                 video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                self._current_dict["img_src"] = video_container.get_attribute('poster')
-                self._download_image(self._current_dict["img_src"])
+                self._current_dict["image_src"] = video_container.get_attribute('poster')
+                self._download_image(self._current_dict["image_src"])
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
-            self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
+            self._current_dict['downloaded'] = False
             print('\nStory image grab error.')
 
 
@@ -707,6 +779,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             Returns: None '''
 
         if (self._driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['reg_title_element'])
             self._grab_description(self._xpath_dict['desc_container'], self._xpath_dict['desc_element'])
             self._grab_user_and_count(
@@ -716,6 +789,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._grab_tags(self._xpath_dict['tag_container'])
             self._grab_image_src()
         elif (self._driver.find_elements_by_xpath('//div[@data-test-id="CloseupDetails"]')):
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['reg_title_element'])
             self._grab_description(self._xpath_dict['desc_container'], self._xpath_dict['desc_element'])
             self._grab_user_and_count(
@@ -725,6 +799,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._grab_tags(self._xpath_dict['tag_container'])
             self._grab_image_src()
         else:
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['h1_title_element'])
             self._current_dict["description"] = 'No description available Story format'
             self._grab_user_and_count(
@@ -754,9 +829,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._driver.get(link)
             self._grab_all_users_and_counts()
             self._main_dict[f"{self._category}"][f"{self._category}_{self._counter_dict[self._category]}"] = self._current_dict
-
-
-
         
     def _data_dump(self) -> None:
 
@@ -796,7 +868,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
             
             Returns: None '''
         
-
         # if dict exists json.load
         print('Creating save logs: ')
         if os.path.exists('../data/recent-save-log.json'):
@@ -808,7 +879,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
         for category in tqdm(self.selected_category_names):
             if category in self._s3_list:
                 update = ['remote', self.s3_bucket]
-
             else:
                 update = 'local'
             self.recent_save_dict[category] = update
@@ -819,6 +889,98 @@ list. Values between 1 and {len(category_link_dict)}: ')
             json.dump(self.recent_save_dict, save)
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
+
+    def _connect_to_RDS(self, remote):
+        DATABASE_TYPE = 'postgresql'
+        DBAPI = 'psycopg2'
+
+        # ENDPOINT = None
+        # if remote:
+        #     ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
+
+        USER = input('User (default = postgres): ')
+        if not USER:
+            USER = 'postgres'
+        PASSWORD = input('Password: ')
+        
+        HOST = input('Host (default = localhost): ')
+        if not HOST:
+            HOST = 'localhost'
+
+        PORT = input('Port (default = 5433): ')
+        if not PORT:
+            PORT = 5433
+        DATABASE = input('Database (default = Pagila): ')
+        if not DATABASE:
+            DATABASE = 'Pagila'
+
+        if remote:
+            ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
+            engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
+        else:
+            engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
+
+        engine.connect()
+
+        return engine
+
+    def _process_df(self, df):
+        '''Rearrange the dataframe in the proper format before returning
+        sending to a RDS.
+        Args: 
+            df: pandas dataframe to process
+        Return: None'''
+
+        df = df.T
+        df['name'] = df.index
+        # df['id'] = list(range(len(df)))
+        # df = df.set_index('uuid4')
+        df = df.set_index('unique_id')
+        file_name_col = df.pop('name')
+        df.insert(0, 'name', file_name_col)
+        print(df.head(3))
+        return df
+
+    def _json_to_rds(self, data_path:str, remote: bool):
+        '''Loads the JSON files from both AWS or locally and turns
+        the data into RDS.
+        
+        Args:
+            data_path: local path (directory) where the json files are stored
+            remote: boolean whether to create/update RDS on AWS
+        
+        Return: None'''
+
+        # Connect to RDS
+        engine = self._connect_to_RDS(remote)
+
+        # Find all local JSON files
+        folders = os.listdir(data_path)
+        recent_log = folders[folders.index('recent-save-log.json')]
+        with open(data_path + '/' + recent_log) as log_file:
+            recent_saves = json.load(log_file)
+
+        # Check content of log to check if the data are on S3 or in local PC
+        for key, val in recent_saves.items():
+            if type(val) == str: # For local JSON files
+                json_path = data_path + '/' + key + '/' + key +'.json'
+                print(json_path)
+                # Load local JSON file
+                df = pd.read_json(json_path)
+                df = self._process_df(df)
+                df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
+
+            elif type(val) == list: # For remote JSON files
+                # Load file from S3 bucket
+                json_obj = self._s3_client.get_object(
+                    Bucket = val[1],
+                    Key = (f'pinterest/{key}/{key}.json')
+                )
+                save_dict = json.loads(json_obj['Body'].read())
+                df = pd.DataFrame.from_dict(save_dict)
+                df = self._process_df(df)
+                df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
+
 
     def get_category_data(self) -> None:
         """Public function that combines all the functionality implemented in the 
@@ -833,24 +995,30 @@ list. Values between 1 and {len(category_link_dict)}: ')
         self._initialise_counter(selected_category_names)
         self._initialise_local_folders('../data', selected_category_names)
         self._check_for_logs()
-        # TODO: May be add a while True
-        try:
-            scrolling_times = int(input('\nHow many times to scroll through each page \
-(~5 to 10 images on average per scroll)?: '))
-        except:
-            raise Exception('Invalid input')
+        while True:
+            try:
+#                 scrolling_times = int(input('\nHow many times to scroll through each page \
+# (~5 to 10 images on average per scroll)?: '))
+                scrolling_times = int(self._args[10])
+                break
+            except:
+                print('Invalid input, try again: ')
         self._grab_images_src(n_scrolls=scrolling_times)
         self._grab_page_data()
         self._data_dump()
         log_created = self._create_log()
-        self._driver.quit()
+        # self._create_RDS()
+
         print('Done and done!')
         self._driver.quit()
 
 if __name__ == "__main__": 
 
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
+    # Scrap the website
     pinterest_scraper.get_category_data()
+    # Create RDS from collected data
+    pinterest_scraper.create_RDS()
 
     # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
     # it as an actual return to pass it into the following function.

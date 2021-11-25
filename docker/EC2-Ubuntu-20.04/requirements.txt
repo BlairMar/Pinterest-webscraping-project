@@ -4,3 +4,5 @@ boto3
 selenium
 tqdm
 urllib3
+pandas
+sqlalchemy
