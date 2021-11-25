@@ -619,6 +619,10 @@ your data/images to a remote bucket? Y or N: ').upper()
             else:
                 self._current_dict["follower_count"] = followers.split()[0]
         except:
+            if 'poster_name' not in self._current_dict.keys():
+                self._current_dict['poster_name'] = 'User Info Error'
+            if 'follower_count' not in self._current_dict.keys():
+                self._current_dict['follower_count'] = 'User Info Error'
             print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
@@ -998,3 +1002,7 @@ if __name__ == "__main__":
 
     # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
     # it as an actual return to pass it into the following function.
+
+    # TODO: move file deletion to after new save is made, for new save make new save loc
+    #       use recent save log to delete old files. delete recent save log, rename new save to recent
+    # TODO: if after scroll 1 list len = 0, move on to next category.
