@@ -225,6 +225,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
         return self.selected_category_names
 
     def create_RDS(self):
+        """Ask for user input whether a RDS needs to be created
+        and if so, whether it needs to be remotely created or locally"""
         valid = False
         while not valid:
             rds_answer =  input("Do you want to create an RDS? [Y/n]:").lower()
@@ -233,7 +235,14 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
                 if rds_answer == 'y':
                     print('Creating RDS...')
-                    self._json_to_rds('../data/', False)
+                    # Ask whether to create/update tables on AWS RDS or local RDS
+                    remote_RDS = input("Do you want a remote AWS RDS? [Y/n]: ").lower()
+                    if remote_RDS == 'y': # Remote
+                        self._json_to_rds('../data/', True)
+                    elif remote_RDS == 'n': # Local
+                        self._json_to_rds('../data/', False)
+                    else:
+                        raise Exception('Invalid answer')
                 else:
                     print('Data will not be saved in an RDS...')
 
@@ -294,7 +303,8 @@ list: ').upper()
         remote = ''
         while remote != 'N' and remote != 'Y':
             if remote == '':
-                remote = input('\nWould you like to save any of your data/images to a remote bucket? Y or N: ').upper()
+                remote = input('\nWould you like to save any of \
+your data/images to a remote bucket? Y or N: ').upper()
                 remote = self._interior_cloud_save_loop(remote)
                 if remote == None:
                     break
@@ -372,10 +382,12 @@ list: ').upper()
             s3 = boto3.resource('s3')
             src_bucket = s3.Bucket(recent_save[save][1])
             print('Moving saved files to specified location: ')
-            for src in tqdm(src_bucket.objects.filter(Prefix=f"pinterest/{save}/")):
+            for src in tqdm(src_bucket.objects.filter(Prefix=
+            f"pinterest/{save}/")):
                 # Move any items from remote bucket in to new local folder.
                 if fresh == 'Y':
-                    src_bucket.download_file(src.key, f"../data/{save}/{src.key.split('/')[2]}")
+                    src_bucket.download_file(src.key, 
+                    f"../data/{save}/{src.key.split('/')[2]}")
                     # Delete old remote file.
                     src.delete()
                 elif fresh == 'N':
@@ -892,68 +904,58 @@ list: ').upper()
         return engine
 
     def _process_df(self, df):
+        '''Rearrange the dataframe in the proper format before returning
+        sending to a RDS.
+        Args: 
+            df: pandas dataframe to process
+        Return: None'''
+
         df = df.T
         df['name'] = df.index
-        df['id'] = list(range(len(df)))
+        # df['id'] = list(range(len(df)))
         # df = df.set_index('uuid4')
-        df = df.set_index('id')
+        df = df.set_index('unique_id')
         file_name_col = df.pop('name')
         df.insert(0, 'name', file_name_col)
         print(df.head(3))
         return df
 
     def _json_to_rds(self, data_path:str, remote: bool):
+        '''Loads the JSON files from both AWS or locally and turns
+        the data into RDS.
+        
+        Args:
+            data_path: local path (directory) where the json files are stored
+            remote: boolean whether to create/update RDS on AWS
+        
+        Return: None'''
+
+        # Connect to RDS
         engine = self._connect_to_RDS(remote)
 
+        # Find all local JSON files
         folders = os.listdir(data_path)
         recent_log = folders[folders.index('recent-save-log.json')]
         with open(data_path + '/' + recent_log) as log_file:
             recent_saves = json.load(log_file)
 
+        # Check content of log to check if the data are on S3 or in local PC
         for key, val in recent_saves.items():
-            if type(val) == str:
-        # for folder in folders:
-            # if '.json' not in folder:
-                # print(folder, os.listdir(data_path+folder))
-                # if not os.listdir(data_path+folder):
-                #     continue
-                # json_path = data_path + key + '/' + os.listdir(data_path+folder)[0]
+            if type(val) == str: # For local JSON files
                 json_path = data_path + '/' + key + '/' + key +'.json'
                 print(json_path)
+                # Load local JSON file
                 df = pd.read_json(json_path)
                 df = self._process_df(df)
-                # df['name'] = df.index
-                # # df['id'] = list(range(len(df)))
-                # df = df.set_index('uuid4')
-                # file_name_col = df.pop('name')
-                # df.insert(0, 'name', file_name_col)
-                # print(df.head(3))
-            # valid = False
-
-            # while not valid:
-            #     try:
-            #         save_to_rds = input('Do you wish to save the JSON data to AWS RDS? [Y/n]: ').lower()
-            #         assert save_to_rds == 'y' or save_to_rds == 'n'
-            #         valid = True
-            #     except Exception:
-            #         print('Invalid input')
-                
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
-            elif type(val) == list:
+            elif type(val) == list: # For remote JSON files
+                # Load file from S3 bucket
                 json_obj = self._s3_client.get_object(
                     Bucket = val[1],
                     Key = (f'pinterest/{key}/{key}.json')
                 )
-                # print(type(json_obj), type(json_obj['Body'].read()))
-                # print(type(json.loads(json_obj['Body'].read())))
                 save_dict = json.loads(json_obj['Body'].read())
-                # with tempfile.TemporaryDirectory() as tempdir:
-                #     with open(f'{tempdir}\dummy.json', 'w') as fp:
-                #         json.dump(save_dict, fp)
-                #         print(f'{tempdir}\dummy.json')
-                #         df = pd.read_json(f'{tempdir}\dummy.json', lines=True)
-                # print('-----------------------------------------------------')
                 df = pd.DataFrame.from_dict(save_dict)
                 df = self._process_df(df)
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
