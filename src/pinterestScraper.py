@@ -13,14 +13,9 @@ import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
-
 import uuid
-
-import zipfile
 import pandas as pd
 from sqlalchemy import create_engine
-import os
-
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -51,7 +46,7 @@ class PinterestScraper:
         current_link: str \n
         xpath_dict: dict \n
         """
-
+        
         self._category = None
         self._category_image_count = defaultdict(int)
         self._root = root
