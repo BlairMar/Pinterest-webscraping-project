@@ -13,10 +13,14 @@ import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
+
+import uuid
+
 import zipfile
 import pandas as pd
 from sqlalchemy import create_engine
 import os
+
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -84,6 +88,8 @@ class PinterestScraper:
         }
 
         self._driver.get(self._root)
+
+    ''' TODO: Talk to Blair about our over-reliance on attributes and if it's an issue. '''
 
     def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories
@@ -249,10 +255,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self.s3_bucket = input('\nPlease enter the name of your desired S3 bucket. ')
             go_on = ''
             while go_on != 'Y' and go_on != 'N':
-                go_on = input(f'\nYou have enetered {self.s3_bucket} as your s3 bucket. \
-                    Is this correct? Y or N: ').upper()
+                go_on = input(f'\nYou have entered {self.s3_bucket} as your s3 bucket. \
+Is this correct? Y or N: ').upper()
                 if go_on == 'Y':
-
                     print('A = All categories: ')
                     upload_check = ['A']
                     for index, category in enumerate(self.selected_category_names):
@@ -261,8 +266,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     while True:
                         try:
                             all_or_some = input('\nWhich categories would you like to download \
-                            to this bucket?\nPlease enter your choice as a comma separated \
-                            list: ').upper()
+to this bucket?\nPlease enter your choice as a comma separated \
+list: ').upper()
                             all_or_some = (all_or_some.replace(' ', '')).split(',')
                             print(all_or_some)
                             repeat_check = []
@@ -470,10 +475,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
                                     Key = (f'pinterest/{save}/{save}.json')
                                 ) 
                                 self._main_dict[f'{save}'] = json.loads(obj['Body'].read())
-                                # s3 = boto3.resource('s3')
-                                # bucket = s3.Bucket(recent_saves[save][1])
-                                # bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
-
                             else: 
                                 print('\nSomething fishy going on with the save_log. ')
                             self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
@@ -544,6 +545,17 @@ list. Values between 1 and {len(category_link_dict)}: ')
                                 self._xpath_dict['links_element'],
                                 n_scrolls)
 
+    def _generate_unique_id(self) -> None:
+
+        ''' Defines a function which generates a unique ID (uuid4) for every image page
+            that is scraped by the scraper. 
+            
+            Arguments: None
+            
+            Returns: None '''
+
+        self._current_dict['unique_id'] = str(uuid.uuid4())
+
     def _grab_title(self, title_element) -> None:
 
         ''' Defines a function that grabs the title from a Pinterest page
@@ -599,10 +611,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
             else:
                 self._current_dict["follower_count"] = followers.split()[0]
         except:
-
-            self._current_dict['Error Grabbing User Info'] = 'Some unknown error ocured when\
-            trying to grab user info.'
-
             print('User Info Error')
 
     def _grab_tags(self, tag_container) -> None:
@@ -626,6 +634,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
     def _download_image(self, src: str) -> None:
         """Download the image either remotely or locally
         """
+
         if self._cat_imgs_to_save[self._category]:
             if self._category not in self._s3_list: # Save locally
                 urllib.request.urlretrieve(src, 
@@ -640,6 +649,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
                         f'{tempdir}/{self._category}_{self._counter_dict[self._category]}.jpg', self.s3_bucket, 
                         f'pinterest/{self._category}/{self._category}_{self._counter_dict[self._category]}.jpg')
                     sleep(0.5)
+        else:
+            self._current_dict['downloaded'] = False
 
     def _grab_image_src(self) -> None:
 
@@ -659,17 +670,23 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
-                self._current_dict["img_src"] = video_element.get_attribute('poster')
-                self._download_image(self._current_dict["img_src"])
+                self._current_dict["image_src"] = video_element.get_attribute('poster')
+                self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
-            self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when trying to grab img src.'
+            self._current_dict['downloaded'] = False
             print('\nImage grab Error. Possible embedded video (youtube).')
-
-    # Need to look into fixing embedded youtube videos.
 
     def _grab_story_image_srcs(self) -> None:
 
@@ -686,23 +703,34 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 if not image:
                     self._current_dict["is_image_or_video"] = 'video(story page format)'
                     video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                    self._current_dict["img_src"] = video_container.get_attribute('poster')
-                    self._download_image(self._current_dict["img_src"])
+                    self._current_dict["image_src"] = video_container.get_attribute('poster')
+                    self._download_image(self._current_dict["image_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 else: 
-                    self._current_dict["is_image_or_video"] = 'story'
-                    self._current_dict["img_src"] = image
-                    self._download_image(self._current_dict["img_src"])
-                    
+                    self._current_dict["is_image_or_video"] = 'image(story page format)'
+                    self._current_dict["image_src"] = image
+                    self._download_image(self._current_dict["image_src"])
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
-                self._current_dict["is_image_or_video"] = 'story of videos'
+                self._current_dict["is_image_or_video"] = 'multi-video(story page format)'
                 video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
-                self._current_dict["img_src"] = video_container.get_attribute('poster')
-                self._download_image(self._current_dict["img_src"])
+                self._current_dict["image_src"] = video_container.get_attribute('poster')
+                self._download_image(self._current_dict["image_src"])
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
-            self._current_dict['Error Grabbing img SRC'] = 'Some unknown error occured when grabbing story img src'
+            self._current_dict['downloaded'] = False
             print('\nStory image grab error.')
 
 
@@ -717,6 +745,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             Returns: None '''
 
         if (self._driver.find_elements_by_xpath('//div[@data-test-id="official-user-attribution"]')):
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['reg_title_element'])
             self._grab_description(self._xpath_dict['desc_container'], self._xpath_dict['desc_element'])
             self._grab_user_and_count(
@@ -726,6 +755,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._grab_tags(self._xpath_dict['tag_container'])
             self._grab_image_src()
         elif (self._driver.find_elements_by_xpath('//div[@data-test-id="CloseupDetails"]')):
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['reg_title_element'])
             self._grab_description(self._xpath_dict['desc_container'], self._xpath_dict['desc_element'])
             self._grab_user_and_count(
@@ -735,6 +765,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             self._grab_tags(self._xpath_dict['tag_container'])
             self._grab_image_src()
         else:
+            self._generate_unique_id()
             self._grab_title(self._xpath_dict['h1_title_element'])
             self._current_dict["description"] = 'No description available Story format'
             self._grab_user_and_count(
@@ -803,7 +834,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
             
             Returns: None '''
         
-
         # if dict exists json.load
         print('Creating save logs: ')
         if os.path.exists('../data/recent-save-log.json'):
@@ -815,7 +845,6 @@ list. Values between 1 and {len(category_link_dict)}: ')
         for category in tqdm(self.selected_category_names):
             if category in self._s3_list:
                 update = ['remote', self.s3_bucket]
-
             else:
                 update = 'local'
             self.recent_save_dict[category] = update
@@ -928,6 +957,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 df = self._process_df(df)
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
+
     def get_category_data(self) -> None:
         """Public function that combines all the functionality implemented in the 
         class to scrap the webpages
@@ -941,17 +971,19 @@ list. Values between 1 and {len(category_link_dict)}: ')
         self._initialise_counter(selected_category_names)
         self._initialise_local_folders('../data', selected_category_names)
         self._check_for_logs()
-        # TODO: May be add a while True
-        try:
-            scrolling_times = int(input('\nHow many times to scroll through each page \
+        while True:
+            try:
+                scrolling_times = int(input('\nHow many times to scroll through each page \
 (~5 to 10 images on average per scroll)?: '))
-        except:
-            raise Exception('Invalid input')
+                break
+            except:
+                print('Invalid input, try again: ')
         self._grab_images_src(n_scrolls=scrolling_times)
         self._grab_page_data()
         self._data_dump()
         log_created = self._create_log()
         # self._create_RDS()
+
         print('Done and done!')
         self._driver.quit()
 
