@@ -83,6 +83,8 @@ class PinterestScraper:
             'categories_container': '//div[@data-test-id="interestRepContainer"]'
         }
 
+        self._driver.get(self._root)
+
     def _get_category_links(self, categories_xpath: str) -> dict:
         """Extract the href attribute of each of the categories
         
@@ -94,7 +96,7 @@ class PinterestScraper:
         ---------------------
         dict: dictionary containing the href of each category
         """
-        self._driver.get(self._root)
+        # self._driver.get(self._root)
         # Get the a list of all the categories
         container = WebDriverWait(self._driver, 2).until(
                 EC.presence_of_element_located((By.XPATH, categories_xpath))
@@ -220,7 +222,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         return self.selected_category_names
 
-    def _create_RDS_user_input(self):
+    def create_RDS(self):
         valid = False
         while not valid:
             rds_answer =  input("Do you want to create an RDS? [Y/n]:").lower()
@@ -229,7 +231,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
                 if rds_answer == 'y':
                     print('Creating RDS...')
-                    self._json_to_rds('../data/')
+                    self._json_to_rds('../data/', False)
                 else:
                     print('Data will not be saved in an RDS...')
 
@@ -825,13 +827,14 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
 
-    def _json_to_rds(self, data_path:str):
-    # print()
-
-
+    def _connect_to_RDS(self, remote):
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
-        # ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
+
+        ENDPOINT = None
+        if remote:
+            ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
+
         USER = input('User: ')
         if not USER:
             USER = 'postgres'
@@ -848,28 +851,52 @@ list. Values between 1 and {len(category_link_dict)}: ')
         if not DATABASE:
             DATABASE = 'Pagila'
 
-        engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
-        # engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
+        if remote:
+            engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
+        else:
+            engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
 
         engine.connect()
 
+        return engine
 
+    def _process_df(self, df):
+        df = df.T
+        df['name'] = df.index
+        df['id'] = list(range(len(df)))
+        # df = df.set_index('uuid4')
+        df = df.set_index('id')
+        file_name_col = df.pop('name')
+        df.insert(0, 'name', file_name_col)
+        print(df.head(3))
+        return df
+
+    def _json_to_rds(self, data_path:str, remote: bool):
+        engine = self._connect_to_RDS(remote)
 
         folders = os.listdir(data_path)
-        for folder in folders:
-            if '.json' not in folder:
+        recent_log = folders[folders.index('recent-save-log.json')]
+        with open(data_path + '/' + recent_log) as log_file:
+            recent_saves = json.load(log_file)
+
+        for key, val in recent_saves.items():
+            if type(val) == str:
+        # for folder in folders:
+            # if '.json' not in folder:
                 # print(folder, os.listdir(data_path+folder))
-                if not os.listdir(data_path+folder):
-                    continue
-                json_path = data_path + folder + '/' + os.listdir(data_path+folder)[0]
+                # if not os.listdir(data_path+folder):
+                #     continue
+                # json_path = data_path + key + '/' + os.listdir(data_path+folder)[0]
+                json_path = data_path + '/' + key + '/' + key +'.json'
                 print(json_path)
-                df = pd.read_json(json_path).T
-                df['name'] = df.index
-                df['id'] = list(range(len(df)))
-                df = df.set_index('id')
-                file_name_col = df.pop('name')
-                df.insert(0, 'name', file_name_col)
-                print(df.head(3))
+                df = pd.read_json(json_path)
+                df = self._process_df(df)
+                # df['name'] = df.index
+                # # df['id'] = list(range(len(df)))
+                # df = df.set_index('uuid4')
+                # file_name_col = df.pop('name')
+                # df.insert(0, 'name', file_name_col)
+                # print(df.head(3))
             # valid = False
 
             # while not valid:
@@ -879,9 +906,27 @@ list. Values between 1 and {len(category_link_dict)}: ')
             #         valid = True
             #     except Exception:
             #         print('Invalid input')
+                print('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh')
+                df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
-                
-                df.to_sql(f'pinterest_{folder}', engine, if_exists='replace')
+            elif type(val) == list:
+                json_obj = self._s3_client.get_object(
+                    Bucket = val[1],
+                    Key = (f'pinterest/{key}/{key}.json')
+                )
+                # print(type(json_obj), type(json_obj['Body'].read()))
+                # print(type(json.loads(json_obj['Body'].read())))
+                save_dict = json.loads(json_obj['Body'].read())
+                # with tempfile.TemporaryDirectory() as tempdir:
+                #     with open(f'{tempdir}\dummy.json', 'w') as fp:
+                #         json.dump(save_dict, fp)
+                #         print(f'{tempdir}\dummy.json')
+                #         df = pd.read_json(f'{tempdir}\dummy.json', lines=True)
+                print('-----------------------------------------------------')
+                df = pd.DataFrame.from_dict(save_dict)
+                df = self._process_df(df)
+                print('yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy', f'pinterest/{key}/{key}.json')
+                df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
     def get_category_data(self) -> None:
         """Public function that combines all the functionality implemented in the 
@@ -906,7 +951,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
         self._grab_page_data()
         self._data_dump()
         log_created = self._create_log()
-        self._create_RDS_user_input()
+        # self._create_RDS()
         print('Done and done!')
         self._driver.quit()
 
@@ -914,6 +959,7 @@ if __name__ == "__main__":
 
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
     pinterest_scraper.get_category_data()
+    pinterest_scraper.create_RDS()
 
     # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
     # it as an actual return to pass it into the following function.
