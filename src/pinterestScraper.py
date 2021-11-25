@@ -229,6 +229,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
         return self.selected_category_names
 
     def create_RDS(self):
+        """Ask for user input whether a RDS needs to be created
+        and if so, whether it needs to be remotely created or locally"""
         valid = False
         while not valid:
             rds_answer =  input("Do you want to create an RDS? [Y/n]:").lower()
@@ -237,7 +239,13 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
                 if rds_answer == 'y':
                     print('Creating RDS...')
-                    self._json_to_rds('../data/', False)
+                    remote_RDS = input("Do you want a remote AWS RDS? [Y/n]: ").lower()
+                    if remote_RDS == 'y':
+                        self._json_to_rds('../data/', True)
+                    elif remote_RDS == 'n':
+                        self._json_to_rds('../data/', False)
+                    else:
+                        raise Exception('Invalid answer')
                 else:
                     print('Data will not be saved in an RDS...')
 
@@ -298,7 +306,8 @@ list: ').upper()
         remote = ''
         while remote != 'N' and remote != 'Y':
             if remote == '':
-                remote = input('\nWould you like to save any of your data/images to a remote bucket? Y or N: ').upper()
+                remote = input('\nWould you like to save any of \
+your data/images to a remote bucket? Y or N: ').upper()
                 remote = self._interior_cloud_save_loop(remote)
                 if remote == None:
                     break
@@ -376,10 +385,12 @@ list: ').upper()
             s3 = boto3.resource('s3')
             src_bucket = s3.Bucket(recent_save[save][1])
             print('Moving saved files to specified location: ')
-            for src in tqdm(src_bucket.objects.filter(Prefix=f"pinterest/{save}/")):
+            for src in tqdm(src_bucket.objects.filter(Prefix=
+            f"pinterest/{save}/")):
                 # Move any items from remote bucket in to new local folder.
                 if fresh == 'Y':
-                    src_bucket.download_file(src.key, f"../data/{save}/{src.key.split('/')[2]}")
+                    src_bucket.download_file(src.key, 
+                    f"../data/{save}/{src.key.split('/')[2]}")
                     # Delete old remote file.
                     src.delete()
                 elif fresh == 'N':
@@ -891,17 +902,32 @@ list: ').upper()
         return engine
 
     def _process_df(self, df):
+        '''Rearrange the dataframe in the proper format before returning
+        sending to a RDS.
+        Args: 
+            df: pandas dataframe to process
+        Return: None'''
+
         df = df.T
         df['name'] = df.index
-        df['id'] = list(range(len(df)))
+        # df['id'] = list(range(len(df)))
         # df = df.set_index('uuid4')
-        df = df.set_index('id')
+        df = df.set_index('unique_id')
         file_name_col = df.pop('name')
         df.insert(0, 'name', file_name_col)
         print(df.head(3))
         return df
 
     def _json_to_rds(self, data_path:str, remote: bool):
+        '''Loads the JSON files from both AWS or locally and turns
+        the data into RDS.
+        
+        Args:
+            data_path: local path (directory) where the json files are stored
+            remote: boolean whether to create/update RDS on AWS
+        
+        Return: None'''
+
         engine = self._connect_to_RDS(remote)
 
         folders = os.listdir(data_path)
