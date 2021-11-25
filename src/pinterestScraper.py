@@ -14,12 +14,9 @@ import boto3
 from tqdm import tqdm
 import shutil
 import uuid
-<<<<<<< HEAD
 import re
-=======
 import pandas as pd
 from sqlalchemy import create_engine
->>>>>>> main
 
 """
 Class to perform webscraping on the Pinterest website.
