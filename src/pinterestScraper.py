@@ -835,19 +835,19 @@ list. Values between 1 and {len(category_link_dict)}: ')
         if remote:
             ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
 
-        USER = input('User: ')
+        USER = input('User (default = postgres): ')
         if not USER:
             USER = 'postgres'
         PASSWORD = input('Password: ')
         
-        HOST = input('Host: ')
+        HOST = input('Host (default = localhost): ')
         if not HOST:
             HOST = 'localhost'
 
-        PORT = input('Port: ')
+        PORT = input('Port (default = 5433): ')
         if not PORT:
             PORT = 5433
-        DATABASE = input('Database: ')
+        DATABASE = input('Database (default = Pagila): ')
         if not DATABASE:
             DATABASE = 'Pagila'
 
@@ -906,7 +906,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             #         valid = True
             #     except Exception:
             #         print('Invalid input')
-                print('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh')
+                
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
             elif type(val) == list:
@@ -922,10 +922,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
                 #         json.dump(save_dict, fp)
                 #         print(f'{tempdir}\dummy.json')
                 #         df = pd.read_json(f'{tempdir}\dummy.json', lines=True)
-                print('-----------------------------------------------------')
+                # print('-----------------------------------------------------')
                 df = pd.DataFrame.from_dict(save_dict)
                 df = self._process_df(df)
-                print('yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy', f'pinterest/{key}/{key}.json')
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
     def get_category_data(self) -> None:
