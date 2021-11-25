@@ -130,7 +130,7 @@ class PinterestScraper:
         # Print all categories available on the route page
         for idx, category in category_link_dict.items():
             print(f"\t {idx}: {category.replace(self._root, '').split('/')[0]}")
-        # Is a return needed here to test?
+        return True
 
     def _categories_to_save_imgs(self, selected_category_names) -> None:
 
@@ -174,6 +174,7 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
                     self._cat_imgs_to_save[cat_name] = False
             else:
                 print('\nCategory image error, Luke, debug it... ')
+        return True
 
 
     def _get_user_input(self, category_link_dict: dict) -> List[str]:  
@@ -247,6 +248,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                     self._json_to_rds('../data/', False)
                 else:
                     print('Data will not be saved in an RDS...')
+        return True
 
     def _interior_cloud_save_loop(self, remote: str) -> Union[None, str]:
 

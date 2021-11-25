@@ -137,7 +137,22 @@ class PinterestScraperTestCase(unittest.TestCase):
     #         i += 1 # next time round, we move to see if 'holidays'
                     
     #     self.assertEqual(counter, 22) 
+    
 
+
+
+    # #makes sure entire method is run 
+    # def test_print_options (self):
+    #     category_link_dict = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')
+    #     test = self.pinterest_scraper._print_options(category_link_dict)
+    #     self.assertEqual(test, True)
+
+    
+    # #makes sure entire mthod is run - haveto manually select all three categories offered (1,4 and 10)
+    # def test_categories_to_save_imgs (self):
+    #     selected_category_names = ['thanksgiving', 'architecture', 'electronics']
+    #     test = self.pinterest_scraper._categories_to_save_imgs(selected_category_names)
+    #     self.assertEqual (test, True)
      
     #  #you haveto manually pick 1,4,10 for this test
     # def test_get_user_input_1 (self): 
@@ -163,6 +178,13 @@ class PinterestScraperTestCase(unittest.TestCase):
      
 
 
+
+    
+    def test_create_RDS (self):
+        test = self.pinterest_scraper.create_RDS()
+        self.assertEqual(test, True)
+
+
     #new
     # def test_interior_cloud_save_loop (self):
     #     pass
@@ -174,20 +196,20 @@ class PinterestScraperTestCase(unittest.TestCase):
 
 
 
-    def test_initialise_local_folders (self):  #remeber 'selected_category_names' is a list of selected categoires - [ 'thanksgiving', 'architecture', 'electronics']
-        #first we call the command to make the 3 folders:
-        self.pinterest_scraper._initialise_local_folders('/Users/danielzakaiem/Downloads', [ 'thanksgiving', 'architecture', 'electronics']) #have i typed in a correct path?
-        folders_created = ['/Users/danielzakaiem/Downloads/thanksgiving/',  # these are the file paths athat should be created after calling the method
-         '/Users/danielzakaiem/Downloads/architecture/',
-          '/Users/danielzakaiem/Downloads/electronics/']
-        counter = 0
-        for folder in folders_created:
-          if os.path.isdir(folder):
-            print('File exists')
-            counter += 1
-        else:
-             print ('File does not exist')
-        self.assertEqual(counter, 3) # asserts if file exists
+    # def test_initialise_local_folders (self):  #remeber 'selected_category_names' is a list of selected categoires - [ 'thanksgiving', 'architecture', 'electronics']
+    #     #first we call the command to make the 3 folders:
+    #     self.pinterest_scraper._initialise_local_folders('/Users/danielzakaiem/Downloads', [ 'thanksgiving', 'architecture', 'electronics']) #have i typed in a correct path?
+    #     folders_created = ['/Users/danielzakaiem/Downloads/thanksgiving/',  # these are the file paths athat should be created after calling the method
+    #      '/Users/danielzakaiem/Downloads/architecture/',
+    #       '/Users/danielzakaiem/Downloads/electronics/']
+    #     counter = 0
+    #     for folder in folders_created:
+    #       if os.path.isdir(folder):
+    #         print('Folder exists')
+    #         counter += 1
+    #     else:
+    #          print ('Folder does not exist')
+    #     self.assertEqual(counter, 3) # asserts if file exists
     
     
     
