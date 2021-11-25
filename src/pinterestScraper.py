@@ -13,14 +13,13 @@ import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
-
 import uuid
-
-import zipfile
+<<<<<<< HEAD
+import re
+=======
 import pandas as pd
 from sqlalchemy import create_engine
-import os
-
+>>>>>>> main
 
 """
 Class to perform webscraping on the Pinterest website.
@@ -51,7 +50,7 @@ class PinterestScraper:
         current_link: str \n
         xpath_dict: dict \n
         """
-
+        
         self._category = None
         self._category_image_count = defaultdict(int)
         self._root = root
@@ -166,7 +165,7 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
                 for cat_name in selected_category_names:
                     self._cat_imgs_to_save[cat_name] = False
             else:
-                print('\nCategory image error, Luke, debug it... ')
+                print('\nNot a supported input. Please retry: ')
 
 
     def _get_user_input(self, category_link_dict: dict) -> List[str]:  
@@ -712,7 +711,7 @@ list: ').upper()
                         pass
                 else: 
                     self._current_dict["is_image_or_video"] = 'image(story page format)'
-                    self._current_dict["image_src"] = image
+                    self._current_dict["image_src"] = re.split('\"', image)[1]
                     self._download_image(self._current_dict["image_src"])
                     if 'downloaded' not in self._current_dict.keys():
                         self._current_dict['downloaded'] = True
