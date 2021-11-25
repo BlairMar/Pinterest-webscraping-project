@@ -831,9 +831,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
 
-        ENDPOINT = None
-        if remote:
-            ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
+        # ENDPOINT = None
+        # if remote:
+        #     ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
 
         USER = input('User (default = postgres): ')
         if not USER:
@@ -852,6 +852,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
             DATABASE = 'Pagila'
 
         if remote:
+            ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
         else:
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
@@ -957,7 +958,9 @@ list. Values between 1 and {len(category_link_dict)}: ')
 if __name__ == "__main__": 
 
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
+    # Scrap the website
     pinterest_scraper.get_category_data()
+    # Create RDS from collected data
     pinterest_scraper.create_RDS()
 
     # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
