@@ -1,4 +1,5 @@
 from typing import Union, List, Set
+from unicodedata import category
 from selenium import webdriver
 from time import sleep
 import urllib.request
@@ -30,7 +31,7 @@ Class to perform webscraping on the Pinterest website.
 """
 class PinterestScraper:
 
-    def __init__(self, root):
+    def __init__(self, root , category):
         """
         Initialise the attributes of the class
 
@@ -55,8 +56,7 @@ class PinterestScraper:
         xpath_dict: dict \n
         """
 
-        self._category = None
-        self._category_image_count = defaultdict(int)
+        self._category = category 
         self._root = root
         # self._driver = webdriver.Chrome()
         self._driver = webdriver.Chrome(ChromeDriverManager().install())
@@ -344,7 +344,6 @@ list: ').upper()
 
         for category in selected_category_names:
             self._counter_dict[f'{category}'] = 0
-        print (f'HERE IS SELF.COUNTER_DICT {self._counter_dict}X')####
         return self._counter_dict
 
     def _delete_redundant_saves(self, save, recent_save, fresh) -> None:
@@ -418,6 +417,7 @@ list: ').upper()
         else: 
             print('Missed a scenario in _delete_redundant_saves. ')
             self._driver.quit()
+        return True
 
     ''' There will be an error when saying no to continuing from save file. 
         Need to make it so that when I say no, file is just deleted, not moved.'''
@@ -509,6 +509,7 @@ list: ').upper()
                 self._link_set = set(tuples_content)
                 self._log = set(tuples_content)
                 print("Previous saves detected: None relate to this data collection run. ")
+        return True
 
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
         start = time.time()
@@ -539,7 +540,7 @@ list: ').upper()
                 print('\nSome errors occurred, most likely due to no images present')
         end = time.time()
         print (f'It had taken {end - start} seconds to run this extract_links method')   
-        return 'success'
+        return True
         
     
     
@@ -561,7 +562,7 @@ list: ').upper()
                                 n_scrolls)
         end = time.time()    
         print (f'It had taken {end - start} seconds to run this grab_images_src method')  
-        return 'success'                      
+        return True                      
 
     def _generate_unique_id(self) -> None:
 
@@ -573,6 +574,7 @@ list: ').upper()
             Returns: None '''
 
         self._current_dict['unique_id'] = str(uuid.uuid4())
+        return True
 
     def _grab_title(self, title_element) -> None:
         start = time.time()
@@ -587,6 +589,7 @@ list: ').upper()
             self._current_dict["title"] = title_element.get_attribute('textContent')
         except: # No title attribute found
             self._current_dict["title"] = 'No Title Data Available'
+        return True
         
     def _grab_description(self, desc_container, desc_element) -> None:
         start = time.time()
@@ -1014,11 +1017,11 @@ list: ').upper()
 if __name__ == "__main__": 
     
     pinterest_scraper = PinterestScraper('https://www.pinterest.co.uk/ideas/')
-    # # Scrap the website
-    # pinterest_scraper.get_category_data()
-    # # Create RDS from collected data
-    # pinterest_scraper.create_RDS()
-    pinterest_scraper._initialise_counter([ 'thanksgiving', 'architecture', 'electronics'])
+    # Scrap the website
+    pinterest_scraper.get_category_data()
+    # Create RDS from collected data
+    pinterest_scraper.create_RDS()
+   
 
     # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
     # it as an actual return to pass it into the following function.
