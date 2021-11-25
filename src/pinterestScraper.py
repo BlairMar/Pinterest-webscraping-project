@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 from tqdm import tqdm
@@ -51,8 +51,8 @@ class PinterestScraper:
         self._category = None
         self._category_image_count = defaultdict(int)
         self._root = root
-        # self._driver = webdriver.Chrome()
-        self._driver = webdriver.Chrome(ChromeDriverManager().install())
+        self._driver = webdriver.Chrome()
+        # self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._image_set = set()
         self._save_path = None
         self._link_set = set()
@@ -648,6 +648,20 @@ list: ').upper()
         else:
             self._current_dict['downloaded'] = False
 
+    def _is_img_downloaded(self) -> None:
+
+        if 'downloaded' not in self._current_dict.keys():
+            self._current_dict['downloaded'] = True
+        else:
+            pass
+
+    def _save_location_key(self) -> None:
+
+        if self._category in self._s3_list:
+            self._current_dict['save_location'] = f"S3 bucket: {self.s3_bucket}"
+        else:
+            self._current_dict['save_location'] = f"Local save in /data/{self._category}"
+
     def _grab_image_src(self) -> None:
 
         ''' Defines a function that grabs the image src from a Pinterest page
@@ -666,22 +680,19 @@ list: ').upper()
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
-                if 'downloaded' not in self._current_dict.keys():
-                    self._current_dict['downloaded'] = True
-                else:
-                    pass
+                self._is_img_downloaded()
+                self._save_location_key()
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
                 self._current_dict["image_src"] = video_element.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
-                if 'downloaded' not in self._current_dict.keys():
-                    self._current_dict['downloaded'] = True
-                else:
-                    pass
+                self._is_img_downloaded()
+                self._save_location_key()
         except:
             self._current_dict['downloaded'] = False
+            self._save_location_key()
             print('\nImage grab Error. Possible embedded video (youtube).')
 
     def _grab_story_image_srcs(self) -> None:
@@ -702,18 +713,14 @@ list: ').upper()
                     self._current_dict["image_src"] = video_container.get_attribute('poster')
                     self._download_image(self._current_dict["image_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
-                    if 'downloaded' not in self._current_dict.keys():
-                        self._current_dict['downloaded'] = True
-                    else:
-                        pass
+                    self._is_img_downloaded()
+                    self._save_location_key()
                 else: 
                     self._current_dict["is_image_or_video"] = 'image(story page format)'
                     self._current_dict["image_src"] = re.split('\"', image)[1]
                     self._download_image(self._current_dict["image_src"])
-                    if 'downloaded' not in self._current_dict.keys():
-                        self._current_dict['downloaded'] = True
-                    else:
-                        pass
+                    self._is_img_downloaded()
+                    self._save_location_key()
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
@@ -721,14 +728,12 @@ list: ').upper()
                 video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
                 self._current_dict["image_src"] = video_container.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
-                if 'downloaded' not in self._current_dict.keys():
-                    self._current_dict['downloaded'] = True
-                else:
-                    pass
+                self._is_img_downloaded()
+                self._save_location_key()
         except:
             self._current_dict['downloaded'] = False
+            self._save_location_key()
             print('\nStory image grab error.')
-
 
     def _grab_all_users_and_counts(self) -> None:
 
@@ -979,8 +984,6 @@ list: ').upper()
         self._data_dump()
         log_created = self._create_log()
         # self._create_RDS()
-
-        print('Done and done!')
         self._driver.quit()
 
 if __name__ == "__main__": 
