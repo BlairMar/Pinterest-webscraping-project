@@ -155,6 +155,9 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
                         print_list = [key for key, value in self._cat_imgs_to_save.items() if value == True]
                         print(f'\nDownloading images for {print_list}')
                         break
+                    except KeyboardInterrupt:
+                        print('\nSession Terminated. ')
+                        exit()
                     except:
                         print('\nPlease only select options from the provided list. No duplicates. ')
             elif get_any == 'N':
@@ -179,6 +182,9 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
 do you wish to grab? 1 to {len(category_link_dict)}: \n"))
                 assert 0 < categories_num <= len(category_link_dict)
                 break
+            except KeyboardInterrupt:
+                print('\nSession Terminated. ')
+                exit()
             except:  
                 print(f"\nInvalid input, try again.") 
 
@@ -215,7 +221,10 @@ list. Values between 1 and {len(category_link_dict)}: ')
                             choice = int(choice)
                             self.selected_category[i+1] = category_link_dict[choice]
                     else: 
-                        print('\nUnknown choice error')            
+                        print('\nUnknown choice error')  
+            except KeyboardInterrupt:
+                print('\nSession Terminated. ')
+                exit()          
             except:
                 raise Exception(f"\nChoice error 2")
 
@@ -286,6 +295,9 @@ list: ').upper()
                                 for option in all_or_some:
                                     self._s3_list.append(self.selected_category_names[int(option) - 1])
                             break
+                        except KeyboardInterrupt:
+                            print('\nSession Terminated. ')
+                            exit()
                         except:
                             print('\nPlease only select options from the provided list. No duplicates. ')
 
@@ -485,25 +497,16 @@ your data/images to a remote bucket? Y or N: ').upper()
                                 self._main_dict[f'{save}'] = json.loads(obj['Body'].read())
                             else: 
                                 print('\nSomething fishy going on with the save_log. ')
-                            self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
+                            # self._delete_redundant_saves(save = save, recent_save = recent_saves, fresh = fresh)
                     elif fresh == 'N':
                         tuples_content = [item for item in tuples_content if item[0].split('/')[0] not in saves]
                         self._link_set = set(tuples_content)
                         self._log = set(tuples_content)
                         for save in saves:
-                            self._delete_redundant_saves(save = save, 
-                            recent_save = recent_saves, fresh = fresh)
-                            # if recent_saves[save] == 'local':
-                            #     shutil.rmtree(f'../data/{save}')
-                            # elif recent_saves[save][0] == 'remote':
-                            #     s3 = boto3.resource('s3')
-                            #     bucket = s3.Bucket(recent_saves[save][1])
-                            #     bucket.objects.filter(Prefix=f"pinterest/{save}/").delete()
-                            # else: 
-                            #     print('\nSomething fishy going on with the save_log. Embedded ')
-                        # print('\nExisting data will be overwritten if you are saving in the same directory as your last save. ')
+                            pass
+                            # self._delete_redundant_saves(save = save, 
+                            # recent_save = recent_saves, fresh = fresh)
                     else:
-                        # self.link_set = set(tuples_content)
                         print('\nPlease re-enter your input. ')
             else:
                 self._link_set = set(tuples_content)
@@ -873,6 +876,8 @@ your data/images to a remote bucket? Y or N: ').upper()
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
 
+    # def _deletion_
+
     def _connect_to_RDS(self, remote):
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
@@ -983,6 +988,9 @@ your data/images to a remote bucket? Y or N: ').upper()
                 scrolling_times = int(input('\nHow many times to scroll through each page \
 (~5 to 10 images on average per scroll)?: '))
                 break
+            except KeyboardInterrupt:
+                print('\nSession Terminated. ')
+                exit()
             except:
                 print('Invalid input, try again: ')
         self._grab_images_src(n_scrolls=scrolling_times)
@@ -1006,3 +1014,6 @@ if __name__ == "__main__":
     # TODO: move file deletion to after new save is made, for new save make new save loc
     #       use recent save log to delete old files. delete recent save log, rename new save to recent
     # TODO: if after scroll 1 list len = 0, move on to next category.
+    # TODO: prometheus and grafana
+    # TODO: Docstring and annotate properly.
+    # TODO: Change try excepts in while loop to old way.
