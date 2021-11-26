@@ -10,6 +10,8 @@ RUN wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`cu
     && apt-get install -yqq unzip \
     && unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/
 
+WORKDIR /temp/workdir/pinterest
+
 COPY ["requirements.txt", "pinterestScraper.py", "./"]
 
 ENV DISPLAY=:99
