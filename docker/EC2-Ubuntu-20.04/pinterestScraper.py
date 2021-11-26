@@ -911,7 +911,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
         if not HOST:
             HOST = 'localhost'
 
-        PORT = self._args[16]
+        PORT = int(self._args[16])
         # PORT = input('Port (default = 5433): ')
         if not PORT:
             PORT = 5433
