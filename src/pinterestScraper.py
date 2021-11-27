@@ -135,7 +135,7 @@ class PinterestScraper:
             get_any = ''
             while get_any != 'N' and get_any != 'Y':
                 get_any = input('\nWould you like to download images for \
-    any of the selected categories? Y or N: ').upper()
+any of the selected categories? Y or N: ').upper()
                 if get_any == 'Y':
                     print('A = All categories: ')
                     download_check = ['A']
@@ -145,7 +145,7 @@ class PinterestScraper:
                     while True:
                         try:
                             downloads = input('\nPlease select which categories you would \
-    like to download images for.\nEnter your answer as a comma separated list: ').upper()
+like to download images for.\nEnter your answer as a comma separated list: ').upper()
                             downloads = (downloads.replace(' ', '')).split(',')
                             repeat_check = []
                             for option in downloads:
@@ -189,7 +189,7 @@ class PinterestScraper:
             while True:
                 try:
                     categories_num = int(input(f"\nHow many categories of images \
-    do you wish to grab? 1 to {len(category_link_dict)}: \n"))
+do you wish to grab? 1 to {len(category_link_dict)}: \n"))
                     assert 0 < categories_num <= len(category_link_dict)
                     break
                 except KeyboardInterrupt:
@@ -208,7 +208,7 @@ class PinterestScraper:
 
                     while len(choices) != categories_num:
                         choices = input(f"\nPlease select your desired categories. \
-    Separate your choices by commas. You have {categories_num} choice(s) to make: ")
+Separate your choices by commas. You have {categories_num} choice(s) to make: ")
 
                         choices = (choices.replace(' ', '')).split(',')
                         print(choices)
@@ -216,7 +216,7 @@ class PinterestScraper:
                             if choice not in check_list:
                                 choices = []
                                 print(f'\nPlease only enter integers in a comma separated \
-    list. Values between 1 and {len(category_link_dict)}: ') 
+list. Values between 1 and {len(category_link_dict)}: ') 
                                 break
                         if len(choices) == 0:
                             continue
@@ -285,7 +285,7 @@ class PinterestScraper:
                 go_on = ''
                 while go_on != 'Y' and go_on != 'N':
                     go_on = input(f'\nYou have entered {self.s3_bucket} as your s3 bucket. \
-    Is this correct? Y or N: ').upper()
+Is this correct? Y or N: ').upper()
                     if go_on == 'Y':
                         print('A = All categories: ')
                         upload_check = ['A']
@@ -295,8 +295,8 @@ class PinterestScraper:
                         while True:
                             try:
                                 all_or_some = input('\nWhich categories would you like to download \
-    to this bucket?\nPlease enter your choice as a comma separated \
-    list: ').upper()
+to this bucket?\nPlease enter your choice as a comma separated \
+list: ').upper()
                                 all_or_some = (all_or_some.replace(' ', '')).split(',')
                                 print(all_or_some)
                                 repeat_check = []
@@ -334,7 +334,7 @@ class PinterestScraper:
             while remote != 'N' and remote != 'Y':
                 if remote == '':
                     remote = input('\nWould you like to save any of \
-    your data/images to a remote bucket? Y or N: ').upper()
+your data/images to a remote bucket? Y or N: ').upper()
                     remote = self._interior_cloud_save_loop(remote)
                     if remote == None:
                         break
@@ -447,8 +447,6 @@ class PinterestScraper:
                             tuples_content = [item for item in tuples_content if item[0].split('/')[0] not in saves]
                             self._link_set = set(tuples_content)
                             self._log = set(tuples_content)
-                            for save in saves:
-                                pass
                         else:
                             print('\nPlease re-enter your input. ')
                 else:
@@ -884,11 +882,9 @@ class PinterestScraper:
             if os.path.exists('../data/recent-save-log.json'):
                 with open('../data/recent-save-log.json', 'r') as load:
                     self.recent_save_dict = json.load(load)
-                empty_run = False
             # NEED TO DO SOMETHING HERE WITH NEW SAVE AND RECENT SAVE
             else:
                 self.recent_save_dict = {}
-                empty_run = True
             # For each category, check if the images should be saved remotely or locally
             for category in tqdm(self.selected_category_names):
                 if category in self._s3_list:
@@ -896,10 +892,13 @@ class PinterestScraper:
                 else:
                     update = 'local'
                 self.recent_save_dict[category] = update
-            if empty_run:
-                self._create_recent_or_new('../data/recent-save-log.json')
-            else:
-                self._create_recent_or_new('../data/new-save-log.json')
+            with open('../data/log.json', 'w') as log, open('../data/recent-save-log.json', 'w') \
+            as save:
+                json.dump(list(self._link_set), log)
+                json.dump(self.recent_save_dict, save)
+            
+            return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
+
         except KeyboardInterrupt:
             raise KeyboardInterrupt
 
@@ -911,7 +910,6 @@ class PinterestScraper:
 
             Returns: None '''
         try:
-
             if fresh:
 
                 with open('../data/recent-save-log.json', 'r') as load:
@@ -984,14 +982,7 @@ class PinterestScraper:
                     else: 
                         print('Missed a scenario in _delete_old_files. ')
                         self._driver.quit()
-
-                with open('../data/new-save-log.json', 'r') as new:
-                    new_to_old = json.load(new)
-
-                with open('../data/recent-save-log.json', 'w') as old:
-                    json.dump(new_to_old, old)
-
-                shutil.rmtree(f'../data/new-save-log.json')
+                        
         except KeyboardInterrupt:
             raise KeyboardInterrupt
 
