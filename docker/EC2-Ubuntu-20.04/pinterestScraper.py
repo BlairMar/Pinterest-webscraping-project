@@ -905,27 +905,26 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         PASSWORD = self._args[14]
         # PASSWORD = input('Password: ')
-        
-        HOST = self._args[15]
-        # HOST = input('Host (default = localhost): ')
-        if not HOST:
-            HOST = 'localhost'
 
-        PORT = int(self._args[16])
+        PORT = int(self._args[15])
         # PORT = input('Port (default = 5433): ')
         if not PORT:
             PORT = 5433
 
-        DATABASE = self._args[17]
+        DATABASE = self._args[16]
         # DATABASE = input('Database (default = Pagila): ')
         if not DATABASE:
             DATABASE = 'Pagila'
 
         if remote:
-            ENDPOINT = self._args[18]
+            ENDPOINT = self._args[17]
             # ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
         else:
+            HOST = self._args[18]
+            # HOST = input('Host (default = localhost): ')
+            if not HOST:
+                HOST = 'localhost'
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
 
         engine.connect()
