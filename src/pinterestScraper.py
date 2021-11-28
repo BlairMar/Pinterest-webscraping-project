@@ -9,7 +9,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
 # from webdriver_manager.chrome import ChromeDriverManager
-import tempfile
 import boto3 
 from tqdm import tqdm
 import shutil
@@ -453,7 +452,7 @@ your data/images to a remote bucket? Y or N: ').upper()
                     self._link_set = set(tuples_content)
                     self._log = set(tuples_content)
                     fresh = None
-                    print("Previous saves detected: None relate to this data collection run. ")
+                    print("\nPrevious saves detected: None relate to this data collection run. ")
             else:
                 fresh = None
             return fresh
@@ -487,7 +486,10 @@ your data/images to a remote bucket? Y or N: ').upper()
                     self._link_set.update([(self._category, link.get_attribute('href')) for link in link_list])
                     print(f"\nNumber of uniques images: {len(self._link_set) - len(self._log)}")
                 except: 
-                    print('\nSome errors occurred, most likely due to no images present')
+                    print('\nNo images detected on this page. Moving to next page (if applicable). ')
+                    self._main_dict[self._category.split('/')[0]]['Message'] = 'No image data available for this category on this run. \
+\nThere may not be any images on this page or there may have been an error.'
+                    break
         except KeyboardInterrupt:
             raise KeyboardInterrupt
 
@@ -847,25 +849,6 @@ your data/images to a remote bucket? Y or N: ').upper()
         except KeyboardInterrupt:
             raise KeyboardInterrupt
 
-    def _create_recent_or_new(self, path: str) -> None:
-
-        ''' Defines the inner function to _create_log and passes the function the correct
-            log save name depending on if it's an initial run or not. 
-            
-            Arguments: path 
-            
-            Returns: that log.json and path exist for tesing.  '''
-        try:
-
-            with open('../data/log.json', 'w') as log, open(path, 'w') \
-                as save:
-                    json.dump(list(self._link_set), log)
-                    json.dump(self.recent_save_dict, save)
-            
-            return os.path.exists('../data/log.json') and os.path.exists(path)
-        except KeyboardInterrupt:
-            raise KeyboardInterrupt
-
     def _create_log(self) -> bool:
 
         ''' Defines a function which creates two logs. One of which logs pages visited as to not repeat
@@ -982,7 +965,7 @@ your data/images to a remote bucket? Y or N: ').upper()
                     else: 
                         print('Missed a scenario in _delete_old_files. ')
                         self._driver.quit()
-                        
+
         except KeyboardInterrupt:
             raise KeyboardInterrupt
 
@@ -1130,59 +1113,5 @@ if __name__ == "__main__":
     # A lot of the attributes shouldn't be attributes. Try to make functions that return something as an attribute return
     # it as an actual return to pass it into the following function.
 
-    # TODO: if after scroll 1 list len = 0, move on to next category.
     # TODO: prometheus and grafana
     # TODO: Docstring and annotate properly.
-
-    ''' TODO: For the delete to work properly.
-
-        Can use a for loop.
-
-        Create a func to turn new saves in to currnt nomenclature. 
-        
-        Scenarios: 
-
-        - Not continue from old data in same loc:
-            - Before run starts: 
-                - Data stays where it is.
-                - Temp folder for new data gets created.
-            - During run:
-                - Except: KeyboardInterrupt: New folder gets deleted 
-            - Once run ends: 
-                - Save new folder, delete old one, rename new one.
-        - Not continue from old data in new loc:
-            - Before run starts: 
-                - Data stays where it is.
-                - New folder created in new loc.
-            - During run:
-                - Except: KeyboardInterrupt: New folder gets deleted
-            - Once run ends: 
-                - Old file deleted when new one saves.
-        - Continue from old data in same loc:
-            - Before run starts: 
-                - Data stays where it is.
-                - Temp folder for new data made.
-            - During run:
-                - Except: KeyboardInterrupt: New folder deleted -> New folder deleted
-            - Once run ends: 
-                - Move old data in to new folder after new save delete old save,
-                  rename new save.
-        - Continue from old data in new loc:
-            - Before run starts: 
-                - Data stays where it is.
-                - New folder created in new loc.
-            - During run:
-                - Except: KeyboardInterrupt: New folder gets deleted
-            - Once run ends: 
-                - Old data moved to new folder after new save.
-
-     '''
-
-    ''' Make temp folders for all, even s3 cats. Push to s3 at the end. Saves potential deletion from s3 using resources.
-        Made temp folders. 
-        Data being added to temp folders.
-        
-        To do after, if keyboard interrupt, delete temp folders.
-        
-        Moved data to proper folders and deleted old.
-             '''
