@@ -9,16 +9,18 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-# from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
-import time # new - i added to time all methods
+import time 
 from tqdm import tqdm
 import shutil
 import uuid
-import re
+import zipfile
 import pandas as pd
 from sqlalchemy import create_engine
+import os
+
 
 
          
@@ -27,7 +29,7 @@ Class to perform webscraping on the Pinterest website.
 """
 class PinterestScraper:
 
-    def __init__(self, root , category):
+    def __init__(self, root, category):
         """
         Initialise the attributes of the class
 
@@ -51,17 +53,11 @@ class PinterestScraper:
         current_link: str \n
         xpath_dict: dict \n
         """
-<<<<<<< HEAD
 
         self._category = category 
-=======
-        
-        self._category = None
-        self._category_image_count = defaultdict(int)
->>>>>>> main
         self._root = root
-        self._driver = webdriver.Chrome()
-        # self._driver = webdriver.Chrome(ChromeDriverManager().install())
+        # self._driver = webdriver.Chrome()
+        self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._image_set = set()
         self._save_path = None
         self._link_set = set()
@@ -114,6 +110,8 @@ class PinterestScraper:
                 EC.presence_of_element_located((By.XPATH, categories_xpath))
             )
         categories = container.find_elements_by_xpath('.//a')
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_category_links' method")   
         # Extract the href
         return {i+1:link.get_attribute('href') for i, link in enumerate(categories)}
 
@@ -130,10 +128,12 @@ class PinterestScraper:
         # Print all categories available on the route page
         for idx, category in category_link_dict.items():
             print(f"\t {idx}: {category.replace(self._root, '').split('/')[0]}")
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_print_options' method")   
         return True
 
     def _categories_to_save_imgs(self, selected_category_names) -> None:
-
+        start = time.time()
         get_any = ''
         while get_any != 'N' and get_any != 'Y':
             get_any = input('\nWould you like to download images for \
@@ -173,15 +173,14 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
                 for cat_name in selected_category_names:
                     self._cat_imgs_to_save[cat_name] = False
             else:
-<<<<<<< HEAD
                 print('\nCategory image error, Luke, debug it... ')
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_categories_to_save_imgs' method")   
         return True
-=======
-                print('\nNot a supported input. Please retry: ')
->>>>>>> main
 
 
     def _get_user_input(self, category_link_dict: dict) -> List[str]:  
+        start = time.time()
         """Let user decide how many and which categories to download
         
         Args
@@ -237,12 +236,13 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
         self.selected_category_names = [category.split('/')[4] for category in self.selected_category.values()]
         print(f"Categories selected: {self.selected_category_names}")
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_get_user_input' method")   
 
         return self.selected_category_names
 
     def create_RDS(self):
-        """Ask for user input whether a RDS needs to be created
-        and if so, whether it needs to be remotely created or locally"""
+        start = time.time()
         valid = False
         while not valid:
             rds_answer =  input("Do you want to create an RDS? [Y/n]:").lower()
@@ -251,20 +251,15 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
                 if rds_answer == 'y':
                     print('Creating RDS...')
-                    # Ask whether to create/update tables on AWS RDS or local RDS
-                    remote_RDS = input("Do you want a remote AWS RDS? [Y/n]: ").lower()
-                    if remote_RDS == 'y': # Remote
-                        self._json_to_rds('../data/', True)
-                    elif remote_RDS == 'n': # Local
-                        self._json_to_rds('../data/', False)
-                    else:
-                        raise Exception('Invalid answer')
+                    self._json_to_rds('../data/', False)
                 else:
                     print('Data will not be saved in an RDS...')
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_create_RDS' method")   
         return True
 
     def _interior_cloud_save_loop(self, remote: str) -> Union[None, str]:
-
+        start = time.time()
         ''' Defines the interior loop of the cloud save function. Would all have been in one function but I needed to repeat
             this section of code if the user made an error entering their bucket name. 
             
@@ -313,15 +308,16 @@ list: ').upper()
             print('\nAll data will be stored on your local machine. ')
         else:
             print('\nYour selection was not valid, please choose again. ')
-            return ''
+            end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_interior_cloud_save_loop' method")   
+        return ''
 
     def _save_to_cloud_or_local(self) -> None:
         start = time.time()
         remote = ''
         while remote != 'N' and remote != 'Y':
             if remote == '':
-                remote = input('\nWould you like to save any of \
-your data/images to a remote bucket? Y or N: ').upper()
+                remote = input('\nWould you like to save any of your data/images to a remote bucket? Y or N: ').upper()
                 remote = self._interior_cloud_save_loop(remote)
                 if remote == None:
                     break
@@ -332,10 +328,13 @@ your data/images to a remote bucket? Y or N: ').upper()
                     break
             else:
                 print('\nLoop structure error. Luke you stupid...')
+        
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_save_to_cloud_or_local' method")   
         return True
 
     def _initialise_local_folders(self, directory_path, selected_category_names) -> None:
-
+        start = time.time()
         ''' Defines a function which initialises folders for
             local saves. 
             
@@ -355,15 +354,19 @@ your data/images to a remote bucket? Y or N: ').upper()
                 if not os.path.exists(f'{self._root_save_path}/{category}'):
                     print(f"\nCreating local folder : {category}")
                     os.makedirs(f'{self._root_save_path}/{category}')
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_initialise_local_folders' method")   
 
     def _initialise_counter(self, selected_category_names) -> dict:
-
+        start = time.time()
         for category in selected_category_names:
             self._counter_dict[f'{category}'] = 0
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_intitialise_counter' method")   
         return self._counter_dict
 
     def _delete_redundant_saves(self, save, recent_save, fresh) -> None:
-
+        start = time.time()
         ''' Defines a function which will delete redundant files. '''
 
         # If save remote and new bucket same: pass
@@ -399,12 +402,10 @@ your data/images to a remote bucket? Y or N: ').upper()
             s3 = boto3.resource('s3')
             src_bucket = s3.Bucket(recent_save[save][1])
             print('Moving saved files to specified location: ')
-            for src in tqdm(src_bucket.objects.filter(Prefix=
-            f"pinterest/{save}/")):
+            for src in tqdm(src_bucket.objects.filter(Prefix=f"pinterest/{save}/")):
                 # Move any items from remote bucket in to new local folder.
                 if fresh == 'Y':
-                    src_bucket.download_file(src.key, 
-                    f"../data/{save}/{src.key.split('/')[2]}")
+                    src_bucket.download_file(src.key, f"../data/{save}/{src.key.split('/')[2]}")
                     # Delete old remote file.
                     src.delete()
                 elif fresh == 'N':
@@ -435,6 +436,8 @@ your data/images to a remote bucket? Y or N: ').upper()
         else: 
             print('Missed a scenario in _delete_redundant_saves. ')
             self._driver.quit()
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_delete_redundant_saves' method")   
         return True
 
     ''' There will be an error when saying no to continuing from save file. 
@@ -527,6 +530,8 @@ your data/images to a remote bucket? Y or N: ').upper()
                 self._link_set = set(tuples_content)
                 self._log = set(tuples_content)
                 print("Previous saves detected: None relate to this data collection run. ")
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_check_for_logs' method")   
         return True
 
     def _extract_links(self, container_xpath: str, elements_xpath: str, n_scrolls = 1) -> None:
@@ -557,7 +562,7 @@ your data/images to a remote bucket? Y or N: ').upper()
             except: 
                 print('\nSome errors occurred, most likely due to no images present')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this extract_links method')   
+        print (f"It had taken {end - start} seconds to run the 'extract_links' method")   
         return True
         
     
@@ -579,11 +584,11 @@ your data/images to a remote bucket? Y or N: ').upper()
                                 self._xpath_dict['links_element'],
                                 n_scrolls)
         end = time.time()    
-        print (f'It had taken {end - start} seconds to run this grab_images_src method')  
+        print (f"It had taken {end - start} seconds to run the '_grab_images_src' method")  
         return True                      
 
     def _generate_unique_id(self) -> None:
-
+        start = time.time()
         ''' Defines a function which generates a unique ID (uuid4) for every image page
             that is scraped by the scraper. 
             
@@ -592,6 +597,8 @@ your data/images to a remote bucket? Y or N: ').upper()
             Returns: None '''
 
         self._current_dict['unique_id'] = str(uuid.uuid4())
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_generate_unique_id' method")   
         return True
 
     def _grab_title(self, title_element) -> None:
@@ -607,6 +614,8 @@ your data/images to a remote bucket? Y or N: ').upper()
             self._current_dict["title"] = title_element.get_attribute('textContent')
         except: # No title attribute found
             self._current_dict["title"] = 'No Title Data Available'
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_grab_title' method")   
         return True
         
     def _grab_description(self, desc_container, desc_element) -> None:
@@ -626,6 +635,8 @@ your data/images to a remote bucket? Y or N: ').upper()
             self._current_dict["description"] = description_element.get_attribute('textContent')
         except:
             self._current_dict["description"] = 'No description available'
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_grab_desription' method")   
 
     def _grab_user_and_count(self, dict_container, dict_element) -> None:
         start = time.time()
@@ -652,7 +663,7 @@ your data/images to a remote bucket? Y or N: ').upper()
         except:
             print('User Info Error')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this grab_user_and_count method')  
+        print (f"It had taken {end - start} seconds to run the '_grab_user_and_count' method")  
 
     def _grab_tags(self, tag_container) -> None:
         start = time.time()
@@ -671,8 +682,11 @@ your data/images to a remote bucket? Y or N: ').upper()
             self._current_dict["tag_list"] = [tag.get_attribute('textContent') for tag in tag_elements]
         except:
             self._current_dict["tag_list"] = 'No Tags Available'
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_grab_tags' method")   
 
     def _download_image(self, src: str) -> None:
+        start = time.time()
         """Download the image either remotely or locally
         """
 
@@ -692,20 +706,8 @@ your data/images to a remote bucket? Y or N: ').upper()
                     sleep(0.5)
         else:
             self._current_dict['downloaded'] = False
-
-    def _is_img_downloaded(self) -> None:
-
-        if 'downloaded' not in self._current_dict.keys():
-            self._current_dict['downloaded'] = True
-        else:
-            pass
-
-    def _save_location_key(self) -> None:
-
-        if self._category in self._s3_list:
-            self._current_dict['save_location'] = f"S3 bucket: {self.s3_bucket}"
-        else:
-            self._current_dict['save_location'] = f"Local save in /data/{self._category}"
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_download_image' method")   
 
     def _grab_image_src(self) -> None:
         start = time.time()
@@ -725,22 +727,25 @@ your data/images to a remote bucket? Y or N: ').upper()
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
-                self._is_img_downloaded()
-                self._save_location_key()
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
                 self._current_dict["image_src"] = video_element.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
-                self._is_img_downloaded()
-                self._save_location_key()
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
             self._current_dict['downloaded'] = False
-            self._save_location_key()
             print('\nImage grab Error. Possible embedded video (youtube).')
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this grab_image_src method')   
+        print (f"It had taken {end - start} seconds to run the '_grab_image_src' method")   
 
     def _grab_story_image_srcs(self) -> None:
         start = time.time()
@@ -760,14 +765,18 @@ your data/images to a remote bucket? Y or N: ').upper()
                     self._current_dict["image_src"] = video_container.get_attribute('poster')
                     self._download_image(self._current_dict["image_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
-                    self._is_img_downloaded()
-                    self._save_location_key()
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 else: 
                     self._current_dict["is_image_or_video"] = 'image(story page format)'
-                    self._current_dict["image_src"] = re.split('\"', image)[1]
+                    self._current_dict["image_src"] = image
                     self._download_image(self._current_dict["image_src"])
-                    self._is_img_downloaded()
-                    self._save_location_key()
+                    if 'downloaded' not in self._current_dict.keys():
+                        self._current_dict['downloaded'] = True
+                    else:
+                        pass
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
@@ -775,12 +784,16 @@ your data/images to a remote bucket? Y or N: ').upper()
                 video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
                 self._current_dict["image_src"] = video_container.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
-                self._is_img_downloaded()
-                self._save_location_key()
+                if 'downloaded' not in self._current_dict.keys():
+                    self._current_dict['downloaded'] = True
+                else:
+                    pass
         except:
             self._current_dict['downloaded'] = False
-            self._save_location_key()
             print('\nStory image grab error.')
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_grab_story_image_srcs' method")   
+
 
     def _grab_all_users_and_counts(self) -> None:
         start = time.time()
@@ -823,7 +836,7 @@ your data/images to a remote bucket? Y or N: ').upper()
             self._grab_tags(self._xpath_dict['story_tag_container'])
             self._grab_story_image_srcs()
         end = time.time()
-        print (f'It had taken {end - start} seconds to run this grab_all_users_and_counts method')   
+        print (f"It had taken {end - start} seconds to run the '_grab_all_users_and_counts' method")   
     
     def _grab_page_data(self) -> None:
         start = time.time()
@@ -845,6 +858,8 @@ your data/images to a remote bucket? Y or N: ').upper()
             self._driver.get(link)
             self._grab_all_users_and_counts()
             self._main_dict[f"{self._category}"][f"{self._category}_{self._counter_dict[self._category]}"] = self._current_dict
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_grab_page_data' method")   
         
     def _data_dump(self) -> None:
         start = time.time()
@@ -873,9 +888,11 @@ your data/images to a remote bucket? Y or N: ').upper()
 
                     Key = f'pinterest/{name}/{name}.json'
                 )
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_data_dump' method")   
 
     def _create_log(self) -> bool:
-
+        start = time.time()
         ''' Defines a function which creates two logs. One of which logs pages visited as to not repeat
             the other a log of where the most recent save for each category is in order to update the
             most recent save. 
@@ -903,10 +920,13 @@ your data/images to a remote bucket? Y or N: ').upper()
         as save:
             json.dump(list(self._link_set), log)
             json.dump(self.recent_save_dict, save)
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_create_log' method")   
 
         return os.path.exists('../data/log.json') and os.path.exists('../data/recent-save-log.json')
 
     def _connect_to_RDS(self, remote):
+        start = time.time()
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
 
@@ -937,68 +957,87 @@ your data/images to a remote bucket? Y or N: ').upper()
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
 
         engine.connect()
-
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_connect_to_RDS' method")   
         return engine
 
     def _process_df(self, df):
-        '''Rearrange the dataframe in the proper format before returning
-        sending to a RDS.
-        Args: 
-            df: pandas dataframe to process
-        Return: None'''
-
+        start = time.time()
         df = df.T
         df['name'] = df.index
-        # df['id'] = list(range(len(df)))
+        df['id'] = list(range(len(df)))
         # df = df.set_index('uuid4')
-        df = df.set_index('unique_id')
+        df = df.set_index('id')
         file_name_col = df.pop('name')
         df.insert(0, 'name', file_name_col)
         print(df.head(3))
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_process_df' method")   
         return df
 
     def _json_to_rds(self, data_path:str, remote: bool):
-        '''Loads the JSON files from both AWS or locally and turns
-        the data into RDS.
         
-        Args:
-            data_path: local path (directory) where the json files are stored
-            remote: boolean whether to create/update RDS on AWS
-        
-        Return: None'''
-
-        # Connect to RDS
+        start = time.time()
         engine = self._connect_to_RDS(remote)
 
-        # Find all local JSON files
         folders = os.listdir(data_path)
         recent_log = folders[folders.index('recent-save-log.json')]
         with open(data_path + '/' + recent_log) as log_file:
             recent_saves = json.load(log_file)
 
-        # Check content of log to check if the data are on S3 or in local PC
         for key, val in recent_saves.items():
-            if type(val) == str: # For local JSON files
+            if type(val) == str:
+        # for folder in folders:
+            # if '.json' not in folder:
+                # print(folder, os.listdir(data_path+folder))
+                # if not os.listdir(data_path+folder):
+                #     continue
+                # json_path = data_path + key + '/' + os.listdir(data_path+folder)[0]
                 json_path = data_path + '/' + key + '/' + key +'.json'
                 print(json_path)
-                # Load local JSON file
                 df = pd.read_json(json_path)
                 df = self._process_df(df)
+                # df['name'] = df.index
+                # # df['id'] = list(range(len(df)))
+                # df = df.set_index('uuid4')
+                # file_name_col = df.pop('name')
+                # df.insert(0, 'name', file_name_col)
+                # print(df.head(3))
+            # valid = False
+
+            # while not valid:
+            #     try:
+            #         save_to_rds = input('Do you wish to save the JSON data to AWS RDS? [Y/n]: ').lower()
+            #         assert save_to_rds == 'y' or save_to_rds == 'n'
+            #         valid = True
+            #     except Exception:
+            #         print('Invalid input')
+                
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
-            elif type(val) == list: # For remote JSON files
-                # Load file from S3 bucket
+            elif type(val) == list:
                 json_obj = self._s3_client.get_object(
                     Bucket = val[1],
                     Key = (f'pinterest/{key}/{key}.json')
                 )
+                # print(type(json_obj), type(json_obj['Body'].read()))
+                # print(type(json.loads(json_obj['Body'].read())))
                 save_dict = json.loads(json_obj['Body'].read())
+                # with tempfile.TemporaryDirectory() as tempdir:
+                #     with open(f'{tempdir}\dummy.json', 'w') as fp:
+                #         json.dump(save_dict, fp)
+                #         print(f'{tempdir}\dummy.json')
+                #         df = pd.read_json(f'{tempdir}\dummy.json', lines=True)
+                # print('-----------------------------------------------------')
                 df = pd.DataFrame.from_dict(save_dict)
                 df = self._process_df(df)
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_jason_to_rds' method")   
 
 
     def get_category_data(self) -> None:
+        start = time.time()
         """Public function that combines all the functionality implemented in the 
         class to scrap the webpages
         """
@@ -1023,7 +1062,11 @@ your data/images to a remote bucket? Y or N: ').upper()
         self._data_dump()
         log_created = self._create_log()
         # self._create_RDS()
+
+        print('Done and done!')
         self._driver.quit()
+        end = time.time()
+        print (f"It had taken {end - start} seconds to run the '_get_category_data' method")   
 
 if __name__ == "__main__": 
     
