@@ -10,6 +10,8 @@ RUN wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`cu
     && apt-get install -yqq unzip \
     && unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/
 
+WORKDIR /temp/workdir/pinterest
+
 COPY ["requirements.txt", "pinterestScraper.py", "./"]
 
 ENV DISPLAY=:99
@@ -18,3 +20,5 @@ RUN pip install -r requirements.txt
 
 ENTRYPOINT ["python", "pinterestScraper.py"]
 
+# CMD [ "22", "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22",  "Y", "A", "Y", "<your-bucket-name>", "Y", "A", "Y", "4", "Y", "Y"]
+CMD [ "1", "3",  "N", "1", "N", "s3-and-boto3", "N", "A", "N", "4", "N", "N", "postgres", "****", "localhost", "5432", "Pagila", "djalkjfia"]

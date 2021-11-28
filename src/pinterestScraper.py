@@ -9,20 +9,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC 
 import json
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import boto3 
 import time # new - i added to time all methods
 from tqdm import tqdm
 import shutil
-
 import uuid
-
-import zipfile
+import re
 import pandas as pd
 from sqlalchemy import create_engine
-import os
-
 
 
          
@@ -55,11 +51,17 @@ class PinterestScraper:
         current_link: str \n
         xpath_dict: dict \n
         """
+<<<<<<< HEAD
 
         self._category = category 
+=======
+        
+        self._category = None
+        self._category_image_count = defaultdict(int)
+>>>>>>> main
         self._root = root
-        # self._driver = webdriver.Chrome()
-        self._driver = webdriver.Chrome(ChromeDriverManager().install())
+        self._driver = webdriver.Chrome()
+        # self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._image_set = set()
         self._save_path = None
         self._link_set = set()
@@ -171,8 +173,12 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
                 for cat_name in selected_category_names:
                     self._cat_imgs_to_save[cat_name] = False
             else:
+<<<<<<< HEAD
                 print('\nCategory image error, Luke, debug it... ')
         return True
+=======
+                print('\nNot a supported input. Please retry: ')
+>>>>>>> main
 
 
     def _get_user_input(self, category_link_dict: dict) -> List[str]:  
@@ -235,6 +241,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
         return self.selected_category_names
 
     def create_RDS(self):
+        """Ask for user input whether a RDS needs to be created
+        and if so, whether it needs to be remotely created or locally"""
         valid = False
         while not valid:
             rds_answer =  input("Do you want to create an RDS? [Y/n]:").lower()
@@ -243,7 +251,14 @@ list. Values between 1 and {len(category_link_dict)}: ')
 
                 if rds_answer == 'y':
                     print('Creating RDS...')
-                    self._json_to_rds('../data/', False)
+                    # Ask whether to create/update tables on AWS RDS or local RDS
+                    remote_RDS = input("Do you want a remote AWS RDS? [Y/n]: ").lower()
+                    if remote_RDS == 'y': # Remote
+                        self._json_to_rds('../data/', True)
+                    elif remote_RDS == 'n': # Local
+                        self._json_to_rds('../data/', False)
+                    else:
+                        raise Exception('Invalid answer')
                 else:
                     print('Data will not be saved in an RDS...')
         return True
@@ -305,7 +320,8 @@ list: ').upper()
         remote = ''
         while remote != 'N' and remote != 'Y':
             if remote == '':
-                remote = input('\nWould you like to save any of your data/images to a remote bucket? Y or N: ').upper()
+                remote = input('\nWould you like to save any of \
+your data/images to a remote bucket? Y or N: ').upper()
                 remote = self._interior_cloud_save_loop(remote)
                 if remote == None:
                     break
@@ -383,10 +399,12 @@ list: ').upper()
             s3 = boto3.resource('s3')
             src_bucket = s3.Bucket(recent_save[save][1])
             print('Moving saved files to specified location: ')
-            for src in tqdm(src_bucket.objects.filter(Prefix=f"pinterest/{save}/")):
+            for src in tqdm(src_bucket.objects.filter(Prefix=
+            f"pinterest/{save}/")):
                 # Move any items from remote bucket in to new local folder.
                 if fresh == 'Y':
-                    src_bucket.download_file(src.key, f"../data/{save}/{src.key.split('/')[2]}")
+                    src_bucket.download_file(src.key, 
+                    f"../data/{save}/{src.key.split('/')[2]}")
                     # Delete old remote file.
                     src.delete()
                 elif fresh == 'N':
@@ -675,6 +693,20 @@ list: ').upper()
         else:
             self._current_dict['downloaded'] = False
 
+    def _is_img_downloaded(self) -> None:
+
+        if 'downloaded' not in self._current_dict.keys():
+            self._current_dict['downloaded'] = True
+        else:
+            pass
+
+    def _save_location_key(self) -> None:
+
+        if self._category in self._s3_list:
+            self._current_dict['save_location'] = f"S3 bucket: {self.s3_bucket}"
+        else:
+            self._current_dict['save_location'] = f"Local save in /data/{self._category}"
+
     def _grab_image_src(self) -> None:
         start = time.time()
         ''' Defines a function that grabs the image src from a Pinterest page
@@ -693,22 +725,19 @@ list: ').upper()
                 self._current_dict["is_image_or_video"] = 'image'
                 self._current_dict["image_src"] = image_element.get_attribute('src')
                 self._download_image(self._current_dict["image_src"])
-                if 'downloaded' not in self._current_dict.keys():
-                    self._current_dict['downloaded'] = True
-                else:
-                    pass
+                self._is_img_downloaded()
+                self._save_location_key()
             except:
                 video_element = self._driver.find_element_by_xpath('//video')
                 self._current_dict["is_image_or_video"] = 'video'
                 self._current_dict["image_src"] = video_element.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
                 # Cannot get video src as the link doesn't load. Can instead get the video thumbnail.
-                if 'downloaded' not in self._current_dict.keys():
-                    self._current_dict['downloaded'] = True
-                else:
-                    pass
+                self._is_img_downloaded()
+                self._save_location_key()
         except:
             self._current_dict['downloaded'] = False
+            self._save_location_key()
             print('\nImage grab Error. Possible embedded video (youtube).')
         end = time.time()
         print (f'It had taken {end - start} seconds to run this grab_image_src method')   
@@ -731,18 +760,14 @@ list: ').upper()
                     self._current_dict["image_src"] = video_container.get_attribute('poster')
                     self._download_image(self._current_dict["image_src"])
                     # This particular case no longer seems useful. Leaving it in place in case it turns out to be useful in larger data_sets.
-                    if 'downloaded' not in self._current_dict.keys():
-                        self._current_dict['downloaded'] = True
-                    else:
-                        pass
+                    self._is_img_downloaded()
+                    self._save_location_key()
                 else: 
                     self._current_dict["is_image_or_video"] = 'image(story page format)'
-                    self._current_dict["image_src"] = image
+                    self._current_dict["image_src"] = re.split('\"', image)[1]
                     self._download_image(self._current_dict["image_src"])
-                    if 'downloaded' not in self._current_dict.keys():
-                        self._current_dict['downloaded'] = True
-                    else:
-                        pass
+                    self._is_img_downloaded()
+                    self._save_location_key()
                 # This will only grab the first couple (4 I believe) images in a story post.
                 # Could improve.
             except:
@@ -750,14 +775,12 @@ list: ').upper()
                 video_container = self._driver.find_element_by_xpath('//div[@data-test-id="story-pin-closeup"]//video')
                 self._current_dict["image_src"] = video_container.get_attribute('poster')
                 self._download_image(self._current_dict["image_src"])
-                if 'downloaded' not in self._current_dict.keys():
-                    self._current_dict['downloaded'] = True
-                else:
-                    pass
+                self._is_img_downloaded()
+                self._save_location_key()
         except:
             self._current_dict['downloaded'] = False
+            self._save_location_key()
             print('\nStory image grab error.')
-
 
     def _grab_all_users_and_counts(self) -> None:
         start = time.time()
@@ -918,68 +941,58 @@ list: ').upper()
         return engine
 
     def _process_df(self, df):
+        '''Rearrange the dataframe in the proper format before returning
+        sending to a RDS.
+        Args: 
+            df: pandas dataframe to process
+        Return: None'''
+
         df = df.T
         df['name'] = df.index
-        df['id'] = list(range(len(df)))
+        # df['id'] = list(range(len(df)))
         # df = df.set_index('uuid4')
-        df = df.set_index('id')
+        df = df.set_index('unique_id')
         file_name_col = df.pop('name')
         df.insert(0, 'name', file_name_col)
         print(df.head(3))
         return df
 
     def _json_to_rds(self, data_path:str, remote: bool):
+        '''Loads the JSON files from both AWS or locally and turns
+        the data into RDS.
+        
+        Args:
+            data_path: local path (directory) where the json files are stored
+            remote: boolean whether to create/update RDS on AWS
+        
+        Return: None'''
+
+        # Connect to RDS
         engine = self._connect_to_RDS(remote)
 
+        # Find all local JSON files
         folders = os.listdir(data_path)
         recent_log = folders[folders.index('recent-save-log.json')]
         with open(data_path + '/' + recent_log) as log_file:
             recent_saves = json.load(log_file)
 
+        # Check content of log to check if the data are on S3 or in local PC
         for key, val in recent_saves.items():
-            if type(val) == str:
-        # for folder in folders:
-            # if '.json' not in folder:
-                # print(folder, os.listdir(data_path+folder))
-                # if not os.listdir(data_path+folder):
-                #     continue
-                # json_path = data_path + key + '/' + os.listdir(data_path+folder)[0]
+            if type(val) == str: # For local JSON files
                 json_path = data_path + '/' + key + '/' + key +'.json'
                 print(json_path)
+                # Load local JSON file
                 df = pd.read_json(json_path)
                 df = self._process_df(df)
-                # df['name'] = df.index
-                # # df['id'] = list(range(len(df)))
-                # df = df.set_index('uuid4')
-                # file_name_col = df.pop('name')
-                # df.insert(0, 'name', file_name_col)
-                # print(df.head(3))
-            # valid = False
-
-            # while not valid:
-            #     try:
-            #         save_to_rds = input('Do you wish to save the JSON data to AWS RDS? [Y/n]: ').lower()
-            #         assert save_to_rds == 'y' or save_to_rds == 'n'
-            #         valid = True
-            #     except Exception:
-            #         print('Invalid input')
-                
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
 
-            elif type(val) == list:
+            elif type(val) == list: # For remote JSON files
+                # Load file from S3 bucket
                 json_obj = self._s3_client.get_object(
                     Bucket = val[1],
                     Key = (f'pinterest/{key}/{key}.json')
                 )
-                # print(type(json_obj), type(json_obj['Body'].read()))
-                # print(type(json.loads(json_obj['Body'].read())))
                 save_dict = json.loads(json_obj['Body'].read())
-                # with tempfile.TemporaryDirectory() as tempdir:
-                #     with open(f'{tempdir}\dummy.json', 'w') as fp:
-                #         json.dump(save_dict, fp)
-                #         print(f'{tempdir}\dummy.json')
-                #         df = pd.read_json(f'{tempdir}\dummy.json', lines=True)
-                # print('-----------------------------------------------------')
                 df = pd.DataFrame.from_dict(save_dict)
                 df = self._process_df(df)
                 df.to_sql(f'pinterest_{key}', engine, if_exists='replace')
@@ -1010,8 +1023,6 @@ list: ').upper()
         self._data_dump()
         log_created = self._create_log()
         # self._create_RDS()
-
-        print('Done and done!')
         self._driver.quit()
 
 if __name__ == "__main__": 
