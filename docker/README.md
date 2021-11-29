@@ -33,3 +33,42 @@
 4. The docker volune mounted on the container is essential so that data recorded in JSON files in past runs can be detected and read. In this way, new data/images can always be appended to the existing dataset without overwriting the latter.
 
 5. As a side not, run the docker container in the foreground to check whether the arguments provided are valid. If any one of them is invalid, the codes will not move on but will be stuck in a loop of with "invalid input" messages. In the event that this occurs, the container will need to be stopped.
+
+## quesInput Questions and Responses
+
+It must be noted that not all the questions will be asked as it depends on the previous question response. However, it needs to be emphasized again that in the *run_container.sh* file, arguments should be provided and ordered as if all the questions were being asked even though previous response may be negative.
+
+| Questions | Possible Responses |
+| ----- | ----- |
+| 1. How many categories of images do you wish to grab? 1 to *P*: | [1, P] |
+| 2. Please select your desired categories. Separate your choices by commas. You have *x* choice(s) to make: | 1,2,3,...,P |
+| 3. Would you like to download images for any of the selected categories? Y or N: | (Y or N) |
+| 4. Please select which categories you would like to download images for. Enter your answer as a comma separated list: | A,1,2,..,N-1 |
+| 5. Would you like to save any of your data/images to a remote bucket? Y or N: | (Y or N) |
+| 6. Please enter the name of your desired S3 bucket | \<bucket-name> |
+| 7. You have entered \<bucket-name> as your s3 bucket. | (Y or N)|
+| 8. Which categories would you like to download to this bucket? Please enter your choice as a comma separated list: | (A or 1,2,...,N-1) |
+| 9. Would you like to add to your existing data? Y or N: | (Y or N) |
+| 10. How many times would you like to scroll through each category (The average is 12-15 images per scroll)?: | [1,M] |
+| 11. Do you want to create an RDS? [Y/N] | (Y or N) |
+| 12. Do you want a remote AWS RDS? [Y/N]: | (Y or N) |
+| 13. User (default = postgres): | \<text> |
+| 14. Password: | \<text> |
+| 15. Port (default = 5433): | \<text> |
+| 16. Database (default = Pagila): | \<text> |
+| 17. AWS endpoint:  | \<text> |
+| 18. Host (default = localhost): | \<text> |
+
+where
+- *P* is the total number of categories available on the root webpage
+- *x* is the response from Q1
+- [] means a range of number you can choose from. Only **ONE** number should be selected
+- () is equivalent to either or (but not both)
+- 1,2,3,... denotes a list of integers can be provided
+- \<text> indicates that arbitrary word should be provided
+
+## Schedule scraping on EC2 instance
+1. The command for running the docker container is found in the *run_container.sh* file.
+2. All the arguments and parameters should be modified in this *.sh* file.
+3. For the cron job, after typing *crontab -e*, put into the file for instance:
+   * * * * * * sh \<path\to\sh-file>
