@@ -317,19 +317,19 @@ list. Values between 1 and {len(category_link_dict)}: ')
             # Ask the user if they would like to create an RDS.
             valid = False
             while not valid:
-                rds_answer =  input("Do you want to create an RDS? [Y/N]:").lower()
-                if rds_answer == 'y' or rds_answer == 'n':
+                rds_answer =  input("Do you want to create an RDS? [Y/N]:").upper()
+                if rds_answer == 'Y' or rds_answer == 'N':
                     # Answer is valid, stop the loop.
                     valid = True
-                    if rds_answer == 'y':
+                    if rds_answer == 'Y':
                         print('Creating RDS...')
                         # Ask whether to create/update tables on AWS RDS or local RDS.
-                        remote_RDS = input("Do you want a remote AWS RDS? [Y/N]: ").lower()
+                        remote_RDS = input("Do you want a remote AWS RDS? [Y/N]: ").upper()
                         # Create/update remote RDS.
-                        if remote_RDS == 'y': 
+                        if remote_RDS == 'Y': 
                             self._json_to_rds('../data/', True)
                         # Create/update local RDS.
-                        elif remote_RDS == 'n': 
+                        elif remote_RDS == 'N': 
                             self._json_to_rds('../data/', False)
                         else:
                             print('Invalid answer')
