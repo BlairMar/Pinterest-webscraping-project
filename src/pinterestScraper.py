@@ -881,9 +881,7 @@ your data/images to a remote bucket? Y or N: ').upper()
             USER = 'postgres'
         PASSWORD = input('Password: ')
         
-        HOST = input('Host (default = localhost): ')
-        if not HOST:
-            HOST = 'localhost'
+        
 
         PORT = input('Port (default = 5433): ')
         if not PORT:
@@ -896,6 +894,9 @@ your data/images to a remote bucket? Y or N: ').upper()
             ENDPOINT = input('AWS endpoint: ') # Change it for your AWS endpoint
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
         else:
+            HOST = input('Host (default = localhost): ')
+            if not HOST:
+                HOST = 'localhost'
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
 
         engine.connect()
