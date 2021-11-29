@@ -61,7 +61,7 @@ class PinterestScraper:
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--disable-dev-shm-usage')
-        self.driver = webdriver.Chrome(options=chrome_options)
+        self._driver = webdriver.Chrome(options=chrome_options)
         # self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._link_set = set() # A set to store previously visited pages' hrefs.
         self._log = set() # A set used to load previously visisted pages' hrefs upon a rerun.
