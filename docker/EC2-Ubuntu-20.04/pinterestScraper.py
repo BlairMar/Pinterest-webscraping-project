@@ -18,6 +18,8 @@ import uuid
 import re
 import pandas as pd
 from sqlalchemy import create_engine
+import sys
+from selenium.webdriver.chrome.options import Options
 
 ''' Defines a class to perform webscraping for the pinterest website. '''
 
@@ -53,7 +55,13 @@ class PinterestScraper:
         
         self._category = None # Holds the value whatever category we are currently on.
         self._root = root # The root URL.
-        self._driver = webdriver.Chrome()
+        chrome_options = Options()
+        chrome_options.add_argument('--ignore-certificate-errors')
+        chrome_options.add_argument('--allow-running-insecure-content')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        self.driver = webdriver.Chrome(options=chrome_options)
         # self._driver = webdriver.Chrome(ChromeDriverManager().install())
         self._link_set = set() # A set to store previously visited pages' hrefs.
         self._log = set() # A set used to load previously visisted pages' hrefs upon a rerun.
@@ -88,6 +96,7 @@ class PinterestScraper:
         }
 
         self._driver.get(self._root) # Opens the root URL.
+        self._argsv = sys.argv
 
     def _get_category_links(self, categories_xpath: str) -> dict:
         
@@ -155,8 +164,7 @@ class PinterestScraper:
             # Ask the user if they would like to download any images at all.
             get_any = ''
             while get_any != 'N' and get_any != 'Y':
-                get_any = input('\nWould you like to download images for \
-any of the selected categories? Y or N: ').upper()
+                get_any = self._argsv[3].upper()
                 # If yes, ask them which categories they would like to download images for.
                 if get_any == 'Y':
                     # Create the start of an input check list to ensure correct input is obtained.
@@ -169,8 +177,7 @@ any of the selected categories? Y or N: ').upper()
                     while True:
                         # Ask which categories they would like to download images for.
                         try:
-                            downloads = input('\nPlease select which categories you would \
-like to download images for.\nEnter your answer as a comma separated list: ').upper()
+                            downloads = self._argsv[4].upper()
                             # Split the string input into a list of inputs.
                             downloads = (downloads.replace(' ', '')).split(',')
                             # Create an empty list to append inputs to, to ensure no repeated inputs.
@@ -234,8 +241,7 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
         try: 
             while True:
                 try:
-                    categories_num = int(input(f"\nHow many categories of images \
-do you wish to grab? 1 to {len(category_link_dict)}: \n"))
+                    categories_num = int(self._argsv[1])
                     # Ensure a valid answer. 
                     assert 0 < categories_num <= len(category_link_dict)
                     break
@@ -256,8 +262,7 @@ do you wish to grab? 1 to {len(category_link_dict)}: \n"))
                     check_list = [str(x+1) for x in range(len(category_link_dict))]
                     # Have user select what categories they want data for if not all categories.
                     while len(choices) != categories_num:
-                        choices = input(f"\nPlease select your desired categories. \
-Separate your choices by commas. You have {categories_num} choice(s) to make: ")
+                        choices = self._argsv[2]
                         # Turn user input into correct list format.
                         choices = (choices.replace(' ', '')).split(',')
                         # Print out the users choices.
@@ -317,19 +322,19 @@ list. Values between 1 and {len(category_link_dict)}: ')
             # Ask the user if they would like to create an RDS.
             valid = False
             while not valid:
-                rds_answer =  input("Do you want to create an RDS? [Y/N]:").lower()
-                if rds_answer == 'y' or rds_answer == 'n':
+                rds_answer =  self._argsv[11].upper()
+                if rds_answer == 'Y' or rds_answer == 'N':
                     # Answer is valid, stop the loop.
                     valid = True
-                    if rds_answer == 'y':
+                    if rds_answer == 'Y':
                         print('Creating RDS...')
                         # Ask whether to create/update tables on AWS RDS or local RDS.
-                        remote_RDS = input("Do you want a remote AWS RDS? [Y/N]: ").lower()
+                        remote_RDS = self._argsv[12].upper()
                         # Create/update remote RDS.
-                        if remote_RDS == 'y': 
+                        if remote_RDS == 'Y': 
                             self._json_to_rds('../data/', True)
                         # Create/update local RDS.
-                        elif remote_RDS == 'n': 
+                        elif remote_RDS == 'N': 
                             self._json_to_rds('../data/', False)
                         else:
                             print('Invalid answer')
@@ -357,12 +362,11 @@ list. Values between 1 and {len(category_link_dict)}: ')
         try:
             # If user wants to save data to an S3 bucket, gets the name of the bucket.
             if remote == 'Y':
-                self.s3_bucket = input('\nPlease enter the name of your desired S3 bucket. ')
+                self.s3_bucket = self._argsv[6]
                 # Shows the user the input to check that there are no mistakes in their entry. Asks to continue.
                 go_on = ''
                 while go_on != 'Y' and go_on != 'N':
-                    go_on = input(f'\nYou have entered {self.s3_bucket} as your s3 bucket. \
-Is this correct? Y or N: ').upper()
+                    go_on = self._argsv[7].upper()
                     # If they user is happy with their entry.
                     if go_on == 'Y':
                         # Creates a printed list and a check list for the user's next input.
@@ -374,9 +378,7 @@ Is this correct? Y or N: ').upper()
                         while True:
                             try:
                                 # Asks the user what categories they wopuld like to download to the S3 bucket.
-                                all_or_some = input('\nWhich categories would you like to download \
-to this bucket?\nPlease enter your choice as a comma separated \
-list: ').upper()
+                                all_or_some = self._argsv[8].upper()
                                 # Turns the input into a valid list.
                                 all_or_some = (all_or_some.replace(' ', '')).split(',')
                                 # Shows the user their choices.
@@ -435,8 +437,7 @@ list: ').upper()
             while remote != 'N' and remote != 'Y':
                 # If this is the first time running the function, or they made an inccorect entry last time.
                 if remote == '':
-                    remote = input('\nWould you like to save any of \
-your data/images to a remote bucket? Y or N: ').upper()
+                    remote = self._argsv[5].upper()
                     # Go to the interior loop.
                     remote = self._interior_cloud_save_loop(remote, selected_category_names)
                     # If the interior loop was completed successfully.
@@ -541,7 +542,7 @@ your data/images to a remote bucket? Y or N: ').upper()
                     fresh = ''
                     # Asks the user if they would like to append to existing data to start afresh.
                     while fresh != 'Y' and fresh != 'N':
-                        fresh = input('\nWould you like to add to your existing data? Y or N: ').upper()
+                        fresh = self._argsv[9].upper()
                         # If user wants to append, update link set and log with the hrefs previously visited.
                         if fresh == 'Y':
                             self._link_set = set(tuples_content)
@@ -1328,28 +1329,29 @@ your data/images to a remote bucket? Y or N: ').upper()
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
         # Ask for user information from script user. If none given default to postgres.
-        USER = input('User (default = postgres): ')
+        USER = self._argsv[13]
         if not USER:
             USER = 'postgres'
         # Asks the user for a conenction password.
-        PASSWORD = input('Password: ')
-        # Asks the user for the host, if none given, default to localhost.
-        HOST = input('Host (default = localhost): ')
-        if not HOST:
-            HOST = 'localhost'
+        PASSWORD = self._argsv[14]
+        
         # Asks the user for the connection port, if none given, default to 5433.
-        PORT = input('Port (default = 5433): ')
+        PORT = self._argsv[15]
         if not PORT:
             PORT = 5433
         # Asks the user for the database name, if none given, default to Pagila.
-        DATABASE = input('Database (default = Pagila): ')
+        DATABASE = self._argsv[16]
         if not DATABASE:
             DATABASE = 'Pagila'
         # If the user wants to mae a remote RDS change the engine being created to support AWS RDS
         if remote:
-            ENDPOINT = input('AWS endpoint: ')
+            ENDPOINT = self._argsv[17]
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
         else:
+            # Asks the user for the host, if none given, default to localhost.
+            HOST = self._argsv[18]
+            if not HOST:
+                HOST = 'localhost'
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
         # Connect to the RDS
         engine.connect()
@@ -1458,8 +1460,7 @@ your data/images to a remote bucket? Y or N: ').upper()
             # Asks the user how many times they would like to scrill through each category page.
             while True:
                 try:
-                    scrolling_times = int(input('\nHow many times would you like to scroll through each category \
-(The average is 12-15 images per scroll)? '))
+                    scrolling_times = int(self._argsv[10])
                     break
                 except KeyboardInterrupt:
                     raise KeyboardInterrupt

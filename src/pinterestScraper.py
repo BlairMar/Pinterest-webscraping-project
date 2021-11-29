@@ -1348,6 +1348,7 @@ your data/images to a remote bucket? Y or N: ').upper()
             ENDPOINT = input('AWS endpoint: ')
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
         else:
+            # Asks the user for the host, if none given, default to localhost.
             HOST = input('Host (default = localhost): ')
             if not HOST:
                 HOST = 'localhost'
