@@ -317,19 +317,19 @@ list. Values between 1 and {len(category_link_dict)}: ')
             # Ask the user if they would like to create an RDS.
             valid = False
             while not valid:
-                rds_answer =  input("Do you want to create an RDS? [Y/N]:").lower()
-                if rds_answer == 'y' or rds_answer == 'n':
+                rds_answer =  input("Do you want to create an RDS? [Y/N]:").upper()
+                if rds_answer == 'Y' or rds_answer == 'N':
                     # Answer is valid, stop the loop.
                     valid = True
-                    if rds_answer == 'y':
+                    if rds_answer == 'Y':
                         print('Creating RDS...')
                         # Ask whether to create/update tables on AWS RDS or local RDS.
-                        remote_RDS = input("Do you want a remote AWS RDS? [Y/N]: ").lower()
+                        remote_RDS = input("Do you want a remote AWS RDS? [Y/N]: ").upper()
                         # Create/update remote RDS.
-                        if remote_RDS == 'y': 
+                        if remote_RDS == 'Y': 
                             self._json_to_rds('../data/', True)
                         # Create/update local RDS.
-                        elif remote_RDS == 'n': 
+                        elif remote_RDS == 'N': 
                             self._json_to_rds('../data/', False)
                         else:
                             print('Invalid answer')
@@ -1333,11 +1333,9 @@ your data/images to a remote bucket? Y or N: ').upper()
             USER = 'postgres'
         # Asks the user for a conenction password.
         PASSWORD = input('Password: ')
-        # Asks the user for the host, if none given, default to localhost.
-        HOST = input('Host (default = localhost): ')
-        if not HOST:
-            HOST = 'localhost'
-        # Asks the user for the connection port, if none given, default to 5433.
+        
+        
+
         PORT = input('Port (default = 5433): ')
         if not PORT:
             PORT = 5433
@@ -1350,6 +1348,10 @@ your data/images to a remote bucket? Y or N: ').upper()
             ENDPOINT = input('AWS endpoint: ')
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{ENDPOINT}:{PORT}/{DATABASE}")
         else:
+            # Asks the user for the host, if none given, default to localhost.
+            HOST = input('Host (default = localhost): ')
+            if not HOST:
+                HOST = 'localhost'
             engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
         # Connect to the RDS
         engine.connect()
