@@ -51,7 +51,7 @@ The ***Python*** libraries that are required to make the scraper work are:
 
 4. Once all the choices have been made, the scraper can be left to perform its task.
 
-5. At the end of data collection, the user will be asked whether tables for RDS should be created. If the user answers yes, the user can then choose between remote or local RDS. The user will need to provide his/her credentials for each section.
+5. At the end of data collection, the user will be asked whether tables for RDS should be created. If the user answers yes, the user can then choose between remote ***AWS RDS*** or local RDS. The user will need to provide his/her credentials for each section.
 
 6. *pgadmin* (postgres) was the application used to see the created tables both remotely and locally. If other SQL DB should be used, this should be changed in the codes in the function where the script is connected to the RDS.
 
