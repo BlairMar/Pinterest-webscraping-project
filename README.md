@@ -2,7 +2,6 @@
 
 
 ![AiCore - Specialist Ai & Data Educator](./images/AiCore-logo.png)
-[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://code.visualstudio.com/)
 
 ## About this project 📑
 
@@ -42,6 +41,7 @@ The ***Python*** libraries that are required to make the scraper work are:
 
 [![macOS](https://svgshare.com/i/ZjP.svg)](https://svgshare.com/i/ZjP.svg)
 [![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://code.visualstudio.com/)
 
 1. When running the main Python script in VS code, [pinterestScraper.py](src/pinterestScraper.py), a web browser window will appear. In this project, the web browser engine used for scraping is **Google Chrome**.
 
