@@ -1,5 +1,5 @@
 # Pinterest-webscraping-project
-
+[![AiCore](https://img.shields.io/badge/AI%20School-AiCore-orange)](https://www.theaicore.com/)
 
 ![AiCore - Specialist Ai & Data Educator](./images/AiCore-logo.png)
 
