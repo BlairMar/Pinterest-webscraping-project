@@ -72,4 +72,5 @@ where
 1. The command for running the docker container is found in the *run_container.sh* file.
 2. All the arguments and parameters should be modified in this *.sh* file.
 3. For the cron job, after typing *crontab -e*, put into the file for instance:
-         **\* \* \* \* \* \* sh \<path\to\sh-file>**
+
+   **\* \* \* \* \* \* sh \<path\to\sh-file>**
