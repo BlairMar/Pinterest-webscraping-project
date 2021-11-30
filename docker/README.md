@@ -18,7 +18,7 @@
 
     **sudo docker container run -it --name \<container-name> --rm \<image-name>:latest**
     
-    However, the above command is valid only if the *pinterestScraper.py* in the *EC2-Ubuntu-20.04* folder is similar to that in the *src* folder, that is, with the input prompt codes and not using arguments (see below for more details).
+    However, the above command is valid only if the *pinterestScraper.py* in the *EC2-Ubuntu-20.04* folder is similar to that in the *src* folder, that is, with the input prompt codes and not using arguments (see below for more details regarding predefined arguments for automating the run).
 
 ## 💻 Automate input via CMD arguments
 
@@ -26,15 +26,15 @@
 
 2. However, in this case, if a volume is beforehand created and then mounted to a container, the new command would be:
 
-   **docker container run --name testremote --rm -v \<volume-name>:/\<folder-in-container> \<image-name> arg1 arg2 ... arg18**
+   **sudo docker container run --name testremote --rm -v \<volume-name>:/\<folder-in-container> \<image-name> arg1 arg2 ... arg18**
 
-   This command will run the default arguments in the ***CMD*** part of the Dockerfile.
+   This command will run the default arguments in the ***CMD*** part of the Dockerfile. The above command is found in the *run_container.sh* file which should normally be the file to run.
 
 3. To add arbitrary inputs, the arguments should be provided as shown previously, that is, at the end of the last command in the same order as they are defined in the Dockerfile or the scraper will not work. The same number of input arguments should also be provided even if some of the inputs will be omitted depending on the answers from the previous questions.
 
 4. The docker volune mounted on the container is essential so that data recorded in JSON files in past runs can be detected and read. In this way, new data/images can always be appended to the existing dataset without overwriting the latter.
 
-5. As a side not, run the docker container in the foreground to check whether the arguments provided are valid. If any one of them is invalid, the codes will not move on but will be stuck in a loop of with "invalid input" messages. In the event that this occurs, the container will need to be stopped.
+5. As a side note, run the docker container in the foreground to check whether the arguments provided are valid. If any one of them is invalid, the codes will not move on but will be stuck in a loop of with "invalid input" messages. In the event that this occurs, the container will need to be stopped.
 
 ## ⁉ Input Questions and Responses
 
