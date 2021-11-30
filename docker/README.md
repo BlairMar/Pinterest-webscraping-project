@@ -1,6 +1,6 @@
 # ✨Instructions✨
 
-## 🛠 Image without CMD (With manuel user input)
+## 🛠 Setting up the container on EC2
 1. Before uploading the required files on an EC2 instance, create a directory named, for example, *Pinterest*.
 
 2. Using the command below and provided you are at the same level as the *EC2-Ubuntu-20.04* folder, upload the files from your PC to the EC2 instance:
@@ -17,6 +17,8 @@
 5. The container can then be created using:
 
     **sudo docker container run -it --name \<container-name> --rm \<image-name>:latest**
+    
+    However, the above command is valid only if the *pinterestScraper.py* in the *EC2-Ubuntu-20.04* folder is similar to that in the *src* folder, that is, with the input prompt codes and not using arguments (see below for more details).
 
 ## 💻 Automate input via CMD arguments
 
