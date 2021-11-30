@@ -43,7 +43,7 @@ It must be noted that not all the questions will be asked as it depends on the p
 | 1. How many categories of images do you wish to grab? 1 to *P*: | [1, P] |
 | 2. Please select your desired categories. Separate your choices by commas. You have *x* choice(s) to make: | 1,2,3,...,P |
 | 3. Would you like to download images for any of the selected categories? Y or N: | (Y or N) |
-| 4. Please select which categories you would like to download images for. Enter your answer as a comma separated list: | A,1,2,..,N-1 |
+| 4. Please select which categories you would like to download images for. Enter your answer as a comma separated list: | (A or 1,2,..,N-1) |
 | 5. Would you like to save any of your data/images to a remote bucket? Y or N: | (Y or N) |
 | 6. Please enter the name of your desired S3 bucket | \<bucket-name> |
 | 7. You have entered \<bucket-name> as your s3 bucket. | (Y or N)|
@@ -62,6 +62,7 @@ It must be noted that not all the questions will be asked as it depends on the p
 where
 - *P* is the total number of categories available on the root webpage
 - *x* is the response from Q1
+- A means all categories
 - [] means a range of number you can choose from. Only **ONE** number should be selected
 - () is equivalent to either or (but not both)
 - 1,2,3,... denotes a list of integers can be provided
@@ -71,4 +72,4 @@ where
 1. The command for running the docker container is found in the *run_container.sh* file.
 2. All the arguments and parameters should be modified in this *.sh* file.
 3. For the cron job, after typing *crontab -e*, put into the file for instance:
-   \* \* \* \* \* \* sh \<path\to\sh-file>
+         \* \* \* \* \* \* sh \<path\to\sh-file>
