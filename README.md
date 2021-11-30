@@ -2,7 +2,7 @@
 
 
 ![AiCore - Specialist Ai & Data Educator](./images/AiCore-logo.png)
-![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://code.visualstudio.com/)
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://code.visualstudio.com/)
 
 ## About this project 📑
 
