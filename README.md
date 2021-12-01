@@ -1,5 +1,5 @@
 # Pinterest-webscraping-project
-
+[![AiCore](https://img.shields.io/badge/AI%20School-AiCore-orange)](https://www.theaicore.com/)
 
 ![AiCore - Specialist Ai & Data Educator](./images/AiCore-logo.png)
 
@@ -7,7 +7,7 @@
 
 [![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
 
-This project is part of the curriculum of the AiCore BootCamp. The aim of this project is to automate the scraping on the [Pinterest](https://www.pinterest.co.uk/ideas/) website. The entire scraper is written in the ***Python*** programming language.
+This project is part of the curriculum of the AiCore BootCamp. The aim of this project is to automate the scraping on the [Pinterest](https://www.pinterest.co.uk/ideas/) website. The entire scraper is written in the ***Python*** programming language. The scraper was also containerized using docker and also deployed on EC2 for scheduling.
 
 ![Explore Pinterest](images/Pinterest-root-page.png)
 
@@ -41,6 +41,7 @@ The ***Python*** libraries that are required to make the scraper work are:
 
 [![macOS](https://svgshare.com/i/ZjP.svg)](https://svgshare.com/i/ZjP.svg)
 [![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://code.visualstudio.com/)
 
 1. When running the main Python script in VS code, [pinterestScraper.py](src/pinterestScraper.py), a web browser window will appear. In this project, the web browser engine used for scraping is **Google Chrome**.
 
@@ -50,9 +51,9 @@ The ***Python*** libraries that are required to make the scraper work are:
 
 4. Once all the choices have been made, the scraper can be left to perform its task.
 
-5. At the end of data collection, the user will be asked whether tables for RDS should be created. If the user answers yes, the user can then choose between remote or local RDS. The user will need to provide his/her credentials for each section.
+5. At the end of data collection, the user will be asked whether tables for RDS should be created. If the user answers yes, the user can then choose between remote ***AWS RDS*** or local RDS. The user will need to provide his/her credentials for each section.
 
-6. *pgadmin* (postgres) was the application used to see the created tables both remotely and locally. Other SQL can be used too, provided the right input is provided.
+6. *pgadmin* (postgres) was the application used to see the created tables both remotely and locally. If other SQL DB should be used, this should be changed in the codes in the function where the script is connected to the RDS.
 
 ## Deploying the scraper in a Docker container on EC2
 
@@ -63,4 +64,6 @@ The ***Python*** libraries that are required to make the scraper work are:
 * It is important to note that the codes in the [pinterestScraper.py](docker/EC2-Ubuntu-20.04/pinterestScraper.py) are slightly different from the Python script run locally. This is just the way the codes were implemented to work on the EC2 instance and Docker.
 
 * Although, it is preferable to save the data from the scraper in a S3 bucket, it is still possible to save it on the EC2 instance and access it, provided a volume is mounted on the container.
+
+* More info about deployment on EC2 can be found in the **docker** folder.
 
