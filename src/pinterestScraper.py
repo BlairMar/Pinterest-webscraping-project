@@ -53,7 +53,7 @@ class PinterestScraper:
             ---------
             None '''
             
-        self._category = None 
+        self._category = None # Holds the value whatever category we are currently on.
         self._root = root # The root URL.
         self._driver = webdriver.Chrome()
         # self._driver = webdriver.Chrome(ChromeDriverManager().install())
@@ -138,6 +138,8 @@ class PinterestScraper:
 
         except KeyboardInterrupt:
             raise KeyboardInterrupt
+        
+        return True
 
     def _categories_to_save_imgs(self, selected_category_names: list) -> None:
 
@@ -216,6 +218,7 @@ like to download images for.\nEnter your answer as a comma separated list: ').up
 
         except KeyboardInterrupt:
             raise KeyboardInterrupt
+        return True
 
 
     def _get_user_input(self, category_link_dict: dict) -> tuple: 
@@ -296,8 +299,8 @@ list. Values between 1 and {len(category_link_dict)}: ')
             # Create a list of category names without the /*numberstring following the name.
             selected_category_names = [category.split('/')[4] for category in selected_category.values()]
             print(f"Categories selected: {selected_category_names}")
-
-            return selected_category_names, selected_category
+            return selected_category_names, selected_category 
+                                                         
 
         except KeyboardInterrupt:
             raise KeyboardInterrupt
@@ -339,6 +342,7 @@ list. Values between 1 and {len(category_link_dict)}: ')
                         print('Data will not be saved in an RDS...')
         except KeyboardInterrupt:
             raise KeyboardInterrupt
+        return True
 
     def _interior_cloud_save_loop(self, remote: str, selected_category_names: list) -> Union[None, str]:
 
@@ -1524,3 +1528,4 @@ if __name__ == "__main__":
     pinterest_scraper.get_category_data()
     # Create RDS from collected data.
     pinterest_scraper.create_RDS()
+   
