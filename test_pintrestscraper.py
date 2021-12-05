@@ -13,23 +13,14 @@ class PinterestScraperTestCase(unittest.TestCase):
 
      
     def setUp(self):   
- 
         self.pinterest_scraper = pinterestScraper.PinterestScraper(root = 'https://www.pinterest.co.uk/ideas/', category = "thanksgiving/949410256396" )
         self._root = 'https://www.pinterest.co.uk/ideas/'
+    
     def tearDown (self):
         self.pinterest_scraper._driver.close()  
         """
         This function is used to set up the scenario for each test
-        
-        Arguments
-        ---------
-        None
-
-        Returns
-        ---------
-        None
         """
-
     def test_get_category_links_1 (self): 
         """
         This funtion is used to see if a dictionary is created
@@ -37,8 +28,6 @@ class PinterestScraperTestCase(unittest.TestCase):
         test_dict = self.pinterest_scraper._get_category_links('//div[@data-test-id="interestRepContainer"]//a')
         self.assertIsInstance(test_dict, dict) 
 
-    
-    
     def test_get_category_links_2 (self):
          """
          This function is used to test if the correct href attributes are extracted
@@ -58,7 +47,6 @@ class PinterestScraperTestCase(unittest.TestCase):
                 print(counter)
          self.assertEqual(counter, 3) 
 
-  
     def test_get_category_links_3(self):
         """
         This function is used to test if the correct hrefs are placed into the dictionary
@@ -96,7 +84,6 @@ class PinterestScraperTestCase(unittest.TestCase):
             i += 1 
         self.assertEqual(counter, 22) 
 
-    
     def test_print_options (self):
         """
         This function is used to test if the entire method is run properly
@@ -104,44 +91,45 @@ class PinterestScraperTestCase(unittest.TestCase):
         category_link_dict = self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')
         test = self.pinterest_scraper._print_options(category_link_dict)
         self.assertEqual(test, True)
-
+    
+    # Requires 22 user inputs.
     def test_categories_to_save_imgs (self):
         """
         This function is used to test if any of the categories available can successfully be inputted 
         """
-        potential_categories_selected = (self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')).values() # outputs a list of all categories available- thus user will haveto input one/more of these
-        #ascertain that any of these inputs will suffice:
+        # Outputs a list of all categories available- thus user will haveto input one/more of these.
+        potential_categories_selected = (self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')).values() 
+        # Ascertain that any of these inputs will suffice.
         counter = 0
         for category in potential_categories_selected:
             if self.pinterest_scraper._categories_to_save_imgs(category) == True:
                 print ("This category can be passed in to the method")
                 counter +=1
             else:
-                print ("This category can not be passed into the method") # for this test ,  you have to reply 22 times if u wanna download
+                print ("This category can not be passed into the method")
         self.assertEqual(counter, 22)
-    
     
     def test_get_user_input_1 (self):
         """
         This function is used to test if the correct list of values is out-putted
         """
-        category_link_dict =  self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')# outputs hrefs to each category in an enumerated dictionary
-        test_output = self.pinterest_scraper._get_user_input(category_link_dict)[0]  #outputs a list of the categories selected  eg ['christmas', 'holidays']
-        #selected category/ies should be within included in this list:
+        # Outputs hrefs to each category in an enumerated dictionary.
+        category_link_dict =  self.pinterest_scraper._get_category_links('//*[@id="mweb-unauth-container"]/div/div/div')
+        # Outputs a list of the categories selected  eg ['christmas', 'holidays'].
+        test_output = self.pinterest_scraper._get_user_input(category_link_dict)[0]  
+        # Selected category/ies should be within included in this list.
         list_should_include = []
         values = category_link_dict.values()
         for  category in values:
             list_should_include.append(category.replace(self._root, '').split('/')[0])
+        # 'Correct' catgory names included in the list appends false to list (x), so list should be all false values.
         x = [] 
         for element in test_output: 
             if element in list_should_include:
-                x.append(False)  # 'correct' catgory names included in the list appends false to list (x), so list should be all false values
+                x.append(False)  
+        # Testoutputted list should be included in 'list_should_include' as it should be one or more of those categories.
+        self.assertTrue(not any(x))  
 
-        self.assertTrue(not any(x))  #testoutputted list should be included in 'list_should_include' as it should be one or more of those categories
-
-
-
-   
     def test_get_user_input_2 (self):
         """1
         This function is used to test if the correct object types are outputted
@@ -154,7 +142,7 @@ class PinterestScraperTestCase(unittest.TestCase):
         self.assertEqual(counter, 1)  
  
 
-  #makes sure entire method is run - haveto type in RDS details manually
+  # User must haveto type in RDS details manually.
     def test_create_RDS (self):
         """
         This function is used to test if the entire method is run properly
@@ -167,7 +155,7 @@ class PinterestScraperTestCase(unittest.TestCase):
         """
         This function is used to test if the correct folders are created
         """                                                              
-        #first we call the command to make the 3 folders:
+        # First we call the command to make the 3 folders.
         self.pinterest_scraper._initialise_local_folders('/Users/danielzakaiem/Downloads', [ 'thanksgiving', 'architecture', 'electronics']) 
         folders_created = ['/Users/danielzakaiem/Downloads/thanksgiving/',  
          '/Users/danielzakaiem/Downloads/architecture/',
@@ -191,13 +179,13 @@ class PinterestScraperTestCase(unittest.TestCase):
         self.assertIsInstance(test, dict)
 
     
-     #makes sure that dictionary has the specific keys {'thanksgiving': 0, 'architecture': 0, 'electronics': 0}
+     # Makes sure that dictionary has the specific keys {'thanksgiving': 0, 'architecture': 0, 'electronics': 0}.
     def test_initialise_counter_2 (self):
          """
          This function is used to test if the correct keys are in the out-putted dictionary
          """
          selected_category_names = ['thanksgiving', 'architecture', 'electronics']
-         test = self.pinterest_scraper._initialise_counter(selected_category_names) #output should be this dict: {'thanksgiving': 0, 'architecture': 0, 'electronics': 0}
+         test = self.pinterest_scraper._initialise_counter(selected_category_names) 
          selected_categories = [ 'thanksgiving', 'architecture', 'electronics']
          counter = 0
          for category in selected_categories:
